@@ -1,0 +1,116 @@
+@if (cargando()) {
+<div class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando detalles de la película...</p>
+</div>
+} @else if (pelicula(); as peli) {
+<div class="detalle-container">
+
+    <!-- COLUMNA IZQUIERDA: Imagen y Metadatos -->
+    <aside class="left-col">
+        <img [src]="peli.poster_url" [alt]="'Póster de ' + peli.titulo" class="poster">
+
+        <div class="metadata-row">
+            <!-- Bloque: Edad (RN-07/08) -->
+            <div class="meta-box" [class.adult]="peli.clasificacion === '18'">
+                <span class="meta-label">Edad</span>
+                <span class="meta-value">{{ peli.clasificacion ? '+' + peli.clasificacion : 'ATP' }}</span>
+            </div>
+
+            <!-- Bloque: Tiempo -->
+            <div class="meta-box">
+                <span class="meta-label">Tiempo</span>
+                <span class="meta-value">{{ peli.duracion_min }}m</span>
+            </div>
+
+            <!-- Bloque: Calificación -->
+            <div class="meta-box rating-box">
+                <span class="meta-label">Calificación</span>
+                <span class="meta-value">⭐ {{ resenas().promedio || 'S/C' }}</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- COLUMNA DERECHA: Sinopsis, Géneros y Funciones -->
+    <main class="right-col">
+
+        <h1 class="movie-title">{{ peli.titulo }}</h1>
+
+        <!-- Sección: Sinopsis -->
+        <section class="info-section">
+            <h2 class="section-subtitle">Sinopsis</h2>
+            <p class="sinopsis-text">{{ peli.sinopsis }}</p>
+        </section>
+
+        <!-- Sección: Géneros -->
+        <section class="info-section">
+            <div class="generos-row">
+                @for (genero of peli.pelicula_generos; track genero) {
+                <span class="badge-genero">{{ genero }} </span>
+                }
+            </div>
+        </section>
+
+        <hr class="divider">
+
+        <!-- Sección: Funciones -->
+        <section class="funciones-section">
+
+            <h1 class="title-funciones">Funciones</h1>
+
+            @if (funcionesAgrupadas().length > 0) {
+
+            <!-- Selector de fechas -->
+            <div class="fechas-selector">
+
+                @for (grupo of funcionesAgrupadas(); track grupo.fecha) {
+
+                <button type="button" class="fecha-button" [class.selected]="grupo.fecha === fechaActiva()"
+                    (click)="seleccionarFecha(grupo.fecha)">
+                    {{ grupo.fecha | date:'EEEE dd/MM' | uppercase }}
+                </button>
+
+                }
+
+            </div>
+
+
+            <!-- Funciones de la fecha seleccionada -->
+            @if (funcionesFechaSeleccionada(); as grupo) {
+            <div class="fecha-group">
+                <h3 class="fecha-title">
+                    {{ grupo.fecha | date:'EEEE dd/MM/yyyy':'':'es-AR' | uppercase }}
+                </h3>
+                <div class="funciones-list">
+                    @for (funcion of grupo.funciones; track funcion.id) {
+                    <div class="funcion-card">
+                        <div class="funcion-info">
+                            <span class="horario">
+                                {{ funcion.inicio | date:'HH:mm' }} hs
+                            </span>
+                            <span class="sala">
+                                {{ funcion.salas?.nombre }}
+                            </span>
+                            <span class="formato">
+                                {{ funcion.formato }} |
+                                {{ funcion.idioma }}
+                            </span>
+                        </div>
+                        <button class="btn btn-primary btn-comprar" (click)="comprar(funcion.id)">
+                            Comprar
+                        </button>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+            } @else {
+            <div class="empty-state">
+                <p>No hay funciones programadas para esta película próximamente.</p>
+            </div>
+            }
+        </section>
+
+    </main>
+</div>
+}

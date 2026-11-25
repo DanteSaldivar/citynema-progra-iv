@@ -1,0 +1,16 @@
+<div class="slider-wrapper">
+    <!-- Flecha izquierda -->
+    <button class="slider-btn prev" type="button" aria-label="Contenido anterior" 
+    (click)="deslizar('izquierda')">
+        ‹
+    </button>
+    <!-- Contenido que recibe el slider -->
+    <div class="slider-track" #slider>
+        <ng-content />
+    </div>
+    <!-- Flecha derecha -->
+    <button class="slider-btn next" type="button" aria-label="Contenido siguiente" 
+    (click)="deslizar('derecha')">
+        ›
+    </button>
+</div>

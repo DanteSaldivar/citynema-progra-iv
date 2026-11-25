@@ -1,0 +1,74 @@
+<main class="home-container">
+
+    <!-- ==========================================================================
+       SECCIÓN 1: TOP 3 MÁS VENDIDAS
+       ========================================================================== -->
+    <section class="section-block top-ventas-section">
+
+        @if (cargandoTop()) {
+        <div class="skeleton-loader hero-skeleton"></div>
+        } @else if((top3().length > 0)) {
+        <!-- 1. Hero Carousel (Top 3) -->
+
+        <app-pelicula-carrusel [peliculas]="top3()"></app-pelicula-carrusel>
+        }
+    </section>
+
+    <!-- ==========================================================================
+       SECCIÓN 2: PELÍCULAS DESTACADAS (Slider Horizontal)
+       ========================================================================== -->
+    <section class="section-block slider-section">
+
+        <header class="section-header">
+            <div>
+                <h2 class="section-title">
+                    Películas destacadas
+                </h2>
+
+                <p class="section-subtitle">
+                    Selección especial de la semana
+                </p>
+            </div>
+        </header>
+
+        @if(cargandoDestacadas()){
+        <div class="skeleton-loader hero-skeleton"></div>
+        } @else {
+        <app-slider>
+            @for (pelicula of destacadas(); track pelicula.id) {
+            <app-pelicula-card [pelicula]="pelicula">
+            </app-pelicula-card>
+            }
+        </app-slider>
+        }
+    </section>
+
+    <!-- ==========================================================================
+       SECCIÓN 3: PRÓXIMAMENTE (Slider Horizontal)
+       ========================================================================== -->
+    <section class="section-block slider-section">
+            <header class="section-header">
+                <div>
+                    <h2 class="section-title">
+                        🎬 Próximamente
+                    </h2>
+
+                    <p class="section-subtitle">
+                        Próximos estrenos en cartelera
+                    </p>
+                </div>
+            </header>
+
+            @if(cargandoProximamente()){
+                <div class="skeleton-loader hero-skeleton"></div>
+            } @else {
+                <app-slider>
+                    @for (pelicula of proximamente(); track pelicula.id) {
+                    <app-pelicula-card [pelicula]="pelicula">
+                    </app-pelicula-card>
+                    }
+                </app-slider>
+            }
+    </section>
+
+</main>

@@ -1,0 +1,114 @@
+
+<div class="historial-container">
+  <h2>Mis Películas</h2>
+  <p class="text-muted">
+    Historial de todo lo que viste. ¡Dejá tu calificación!
+  </p>
+
+  @if (cargando()) {
+    <div class="loading-state mt-lg">
+      Cargando tu historial de cine...
+    </div>
+  } @else if (peliculas().length === 0) {
+    <div class="empty-state card mt-lg">
+      <h3>Aún no hay películas en tu historial</h3>
+      <p>Tus películas aparecerán aquí luego de asistir a una función.</p>
+    </div>
+  } @else {
+    <app-slider>
+      @for (peli of peliculas(); track peli.id) {
+        <div class="movie-card card">
+          <img
+            [src]="peli.poster_url || 'assets/placeholder.jpg'"
+            [alt]="peli.titulo"
+            class="poster">
+
+          <div class="movie-info">
+            <h3>{{ peli.titulo }}</h3>
+
+            <small class="text-muted">
+              Vista el: {{ peli.ultima_fecha | date:'dd/MM/yyyy' }}
+            </small>
+
+            <div class="review-section mt-sm">
+              <div class="stars">
+                @for (star of [1, 2, 3, 4, 5]; track star) {
+                  <span
+                    class="star"
+                    [class.active]="star <= (peli.calificacion || 0)"
+                    (click)="seleccionarEstrella(peli, star)">
+                    ★
+                  </span>
+                }
+              </div>
+
+              <div class="input-group mt-xs">
+                <input
+                  type="text"
+                  class="input-control w-100"
+                  placeholder="Dejá un comentario corto..."
+                  maxlength="150"
+                  [(ngModel)]="peli.comentario">
+              </div>
+
+              <button
+                class="btn btn-sm btn-primary mt-sm w-100"
+                (click)="enviarResena(peli)"
+                [disabled]="!peli.calificacion || guardando() === peli.id">
+                {{ guardando() === peli.id
+                  ? 'Guardando...'
+                  : 'Guardar Calificación' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </app-slider>
+  }
+</div>
+
+@if (mostrarModalResena) {
+  <app-modal
+    [titulo]="estadoModalResena === 'exito'
+      ? 'Reseña guardada'
+      : 'Error al guardar reseña'"
+    (cerrar)="cerrarModalResena()">
+
+    <div class="modal-resena">
+
+      @if (estadoModalResena === 'exito') {
+        <h3>¡Gracias por tu calificación!</h3>
+
+        <p class="subtitle">
+          Tu opinión se guardó correctamente.
+        </p>
+
+        <div class="modal-acciones">
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="cerrarModalResena()">
+            Aceptar
+          </button>
+        </div>
+      } @else {
+        <h3>Ocurrió un problema</h3>
+
+        <div class="alert-error">
+          {{ mensajeModalResena }}
+        </div>
+
+        <div class="modal-acciones">
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="cerrarModalResena()">
+            Cerrar
+          </button>
+        </div>
+      }
+
+    </div>
+
+  </app-modal>
+}

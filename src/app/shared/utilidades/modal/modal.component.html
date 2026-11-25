@@ -1,0 +1,20 @@
+<div class="modal-overlay" (click)="cerrar.emit()">
+  <section
+    class="modal-content"
+    [class] = "clase()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="titulo()"
+    (click)="$event.stopPropagation()">
+
+    <button
+      class="modal-close"
+      type="button"
+      aria-label="Cerrar modal"
+      (click)="cerrar.emit()">
+      ✕
+    </button>
+
+    <ng-content></ng-content>
+  </section>
+</div>

@@ -1,0 +1,141 @@
+<form class="form-pelicula" [formGroup]="peliculaForm" (ngSubmit)="onSubmit()" novalidate>
+  <header class="form-header">
+    <div>
+      <h2>Alta de película</h2>
+      <p class="subtitle">
+        Completá los datos para incorporar una película al catálogo.
+      </p>
+    </div>
+  </header>
+
+  @if (errorMensaje()) {
+  <div class="alert-error" role="alert">
+    {{ errorMensaje() }}
+  </div>
+  }
+
+  @if (exitoMensaje()) {
+  <div class="alert-success" role="status">
+    {{ exitoMensaje() }}
+  </div>
+  }
+
+  <div class="form-layout">
+    <section class="form-fields">
+      <div class="form-group">
+        <label for="titulo">Título</label>
+        <input id="titulo" type="text" formControlName="titulo" placeholder="Ej. Interstellar" maxlength="150"
+          [class.is-invalid]="peliculaForm.controls.titulo.invalid && peliculaForm.controls.titulo.touched"
+          [disabled]="guardando()" />
+
+        @if (peliculaForm.controls.titulo.touched && peliculaForm.controls.titulo.errors) {
+        <small class="field-error">
+          @if (peliculaForm.controls.titulo.hasError('required') || peliculaForm.controls.titulo.hasError('pattern')) {
+          Ingresá un título válido.
+          } @else if (peliculaForm.controls.titulo.hasError('maxlength')) {
+          El título no puede superar los 150 caracteres.
+          }
+        </small>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="sinopsis">Sinopsis</label>
+        <textarea id="sinopsis" formControlName="sinopsis" placeholder="Escribí una descripción de la película..."
+          rows="5" maxlength="3000"
+          [class.is-invalid]="peliculaForm.controls.sinopsis.invalid && peliculaForm.controls.sinopsis.touched"
+          [disabled]="guardando()"></textarea>
+
+        @if (peliculaForm.controls.sinopsis.touched && peliculaForm.controls.sinopsis.errors) {
+        <small class="field-error">
+          @if (peliculaForm.controls.sinopsis.hasError('required') ||
+          peliculaForm.controls.sinopsis.hasError('pattern')) {
+          La sinopsis es obligatoria.
+          } @else if (peliculaForm.controls.sinopsis.hasError('maxlength')) {
+          La sinopsis no puede superar los 3000 caracteres.
+          }
+        </small>
+        }
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="duracion_min">Duración (min)</label>
+          <input id="duracion_min" type="number" formControlName="duracion_min" min="1" step="1" placeholder="120"
+            [class.is-invalid]="peliculaForm.controls.duracion_min.invalid && peliculaForm.controls.duracion_min.touched"
+            [disabled]="guardando()" />
+
+          @if (peliculaForm.controls.duracion_min.touched && peliculaForm.controls.duracion_min.invalid) {
+          <small class="field-error">
+            Ingresá una duración entera mayor que cero.
+          </small>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="fecha_estreno">Fecha de estreno</label>
+          <app-fecha-hora-select [mostrarHora]="false" [fechaMinima]="ahora" (valorCambio)="onFechaCambio($event)" />
+
+          @if (peliculaForm.controls.fecha_estreno.touched && peliculaForm.controls.fecha_estreno.invalid) {
+          <small class="field-error">Seleccioná una fecha de estreno.</small>
+          }
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="clasificacion">Clasificación</label>
+          <select id="clasificacion" formControlName="clasificacion" [disabled]="guardando()">
+            <option value="ATP">ATP</option>
+            <option value="13">Mayores de 13 años</option>
+            <option value="18">Mayores de 18 años</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="estado">Estado</label>
+          <select id="estado" formControlName="estado" [disabled]="guardando()">
+            <option value="proximamente">Próximamente</option>
+            <option value="en_cartelera">En cartelera</option>
+            <option value="finalizado">Finalizado</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <aside class="poster-section">
+      <label class="poster-heading" for="poster">Póster de la película</label>
+
+      <label class="poster-upload" for="poster">
+        @if (vistaPrevia()) {
+        <img class="poster-preview" [src]="vistaPrevia()" alt="Vista previa del póster" />
+        <span class="poster-change">↻ Cambiar imagen</span>
+        } @else {
+        <span class="upload-icon">＋</span>
+        <span class="upload-title">Seleccionar póster</span>
+        <span class="upload-hint">JPG, PNG o WebP</span>
+        <span class="upload-hint">Máximo 5 MB</span>
+        }
+      </label>
+
+      <input id="poster" class="file-input" type="file" accept="image/jpeg,image/png,image/webp"
+        (change)="seleccionarArchivo($event)" [disabled]="guardando()" />
+
+      @if (archivoSeleccionado) {
+      <p class="file-name">{{ archivoSeleccionado.name }}</p>
+      } @else {
+      <p class="poster-hint">La imagen se guardará en el almacenamiento del cine.</p>
+      }
+    </aside>
+  </div>
+
+  <footer class="form-actions">
+    <button type="button" class="btn-secondary" (click)="cancelar.emit()" [disabled]="guardando()">
+      Cancelar
+    </button>
+
+    <button type="submit" class="btn-primary" [disabled]="guardando()">
+      {{ guardando() ? 'Guardando...' : 'Guardar película' }}
+    </button>
+  </footer>
+</form>

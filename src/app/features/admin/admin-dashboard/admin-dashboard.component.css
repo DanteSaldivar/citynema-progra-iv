@@ -1,0 +1,142 @@
+.admin-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 var(--space-md);
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+}
+
+.actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.kpi-card {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+}
+
+.kpi-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: var(--space-sm) 0;
+}
+
+.text-primary {
+    color: var(--color-primary);
+}
+
+.star-item {
+    font-size: 1.8rem;
+    color: #ffca28;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+}
+
+/* CSS Bar Chart */
+.css-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.bar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.bar-label {
+    width: 140px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bar-track {
+    flex-grow: 1;
+    background: var(--bg-surface-hover);
+    height: 16px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: var(--color-primary);
+    transition: width 0.5s ease-in-out;
+}
+
+.bar-number {
+    width: 40px;
+    text-align: right;
+    font-weight: bold;
+}
+
+/* Audit List */
+.audit-list {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--space-md);
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.audit-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--bg-surface-hover);
+    font-size: 0.85rem;
+}
+
+.time {
+    color: var(--text-muted);
+    width: 100px;
+}
+
+.badge {
+    border: 1px solid var(--text-muted);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    width: 110px;
+    text-align: center;
+}
+
+.user {
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: var(--space-md);
+        align-items: flex-start;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}

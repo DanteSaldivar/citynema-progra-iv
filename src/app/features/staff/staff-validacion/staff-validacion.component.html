@@ -1,0 +1,63 @@
+<div class="validacion-container">
+    <div class="card validacion-card">
+        <h2 class="text-center">Control de Acceso</h2>
+
+        <!-- Pestañas para elegir qué validar -->
+        <div class="tabs">
+            <button class="tab-btn" [class.active]="tipo() === 'entrada'" (click)="tipo.set('entrada')">
+                🎟️ Entrada de Cine
+            </button>
+            <button class="tab-btn" [class.active]="tipo() === 'candy'" (click)="tipo.set('candy')">
+                🍿 Candy Bar
+            </button>
+        </div>
+
+        <div class="scanner-section">
+            <div class="camera-placeholder">
+                <p class="text-muted">📷 Área de escáner de cámara</p>
+                <small>(Integración con lector QR de dispositivo)</small>
+            </div>
+
+            <div class="manual-input-section">
+                <label>Ingreso manual de código (Falla de lector):</label>
+                <div class="input-group">
+                    <input type="text" class="input-control w-100" placeholder="Ej: 123e4567-e89b..."
+                        [(ngModel)]="codigoManual" (keyup.enter)="validarCodigo()">
+                    <button class="btn btn-primary" [disabled]="procesando() || !codigoManual"
+                        (click)="validarCodigo()">
+                        Validar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultados de la validación -->
+        @if (resultadoExito()) {
+        <div class="alert-success mt-lg">
+            <h3>✅ ¡Validación Exitosa!</h3>
+            @if (tipo() === 'entrada') {
+            <p><strong>Película:</strong> {{ datosEntrada()?.funciones?.peliculas?.titulo }}</p>
+            <p><strong>Función:</strong> {{ datosEntrada()?.funciones?.inicio | date:'dd/MM HH:mm' }}</p>
+            <p><strong>Butaca:</strong> Fila {{ datosEntrada()?.tipo_butaca | uppercase }}</p>
+            @if (datosEntrada()?.requiere_adulto) {
+            <p class="text-warning">⚠️ Requiere acompañante adulto.</p>
+            }
+            } @else {
+            <p><strong>Orden de Candy:</strong> Confirmada</p>
+            <ul>
+                @for (item of datosCandy()?.orden_productos; track $index) {
+                <li>{{ item.cantidad }}x {{ item.productos?.nombre || 'Combo' }}</li>
+                }
+            </ul>
+            }
+        </div>
+        }
+
+        @if (mensajeError()) {
+        <div class="alert-error mt-lg">
+            <h3>❌ Acceso Denegado</h3>
+            <p>{{ mensajeError() }}</p>
+        </div>
+        }
+    </div>
+</div>

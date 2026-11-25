@@ -1,0 +1,90 @@
+<header class="main-navbar">
+    <div class="nav-container">
+        <!-- Logotipo y Enlaces Principales -->
+        <div class="nav-left">
+            <a routerLink="/" class="nav-brand" aria-label="cityNema inicio">
+                <span class="brand-city">city</span><span class="brand-nema">Nema</span>
+            </a>
+
+            <nav class="nav-links" aria-label="Navegación principal">
+                <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                    class="nav-link">
+                    Home
+                </a>
+                <a routerLink="/catalogo" routerLinkActive="active" class="nav-link">
+                    Cartelera
+                </a>
+            </nav>
+        </div>
+
+        <!-- Acceso a Perfil / Cuenta / Autenticación -->
+        <div class="nav-right">
+            @if (auth.estaAutenticado()) {
+
+            <nav class="nav-links" aria-label="Navegación principal">
+                @if(auth.esAdmin()) {
+                    <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                        class="nav-link">
+                        Panel Administrador
+                    </a>
+                    <a routerLink="/admin/configuracion" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                        class="nav-link">
+                        configuración Cupones
+                    </a>
+                    <a routerLink="/admin/funciones" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                        class="nav-link">
+                        Funciones
+                    </a>
+                } @else if (auth.esEmpleado()) {
+                    <a routerLink="/staff" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                        class="nav-link">
+                        Panel Empleado
+                    </a>
+                }
+            </nav>
+
+            <!-- Info de Fidelización (Puntos y Créditos) -->
+            <div class="ledger-info d-none-mobile">
+                <span class="puntos">{{ saldos().saldoPuntos }} Pts</span>
+                <span class="divider">|</span>
+                <span class="creditos">${{ saldos().saldoCredito }}</span>
+            </div>
+
+            <!-- Botón de Cuenta con Menú Desplegable -->
+            <div class="user-menu-container" (click)="mostrarMenu.set(!mostrarMenu())">
+                <button class="user-account-btn" aria-label="Opciones de cuenta">
+                    <span class="user-name">{{ userEmail() | slice:0:15 }}Mi cuenta</span>
+                    <div class="user-avatar" aria-hidden="true">
+                        {{ userInitials() }}
+                    </div>
+                </button>
+
+                <!-- Menú Desplegable -->
+                @if (mostrarMenu()) {
+                <div class="dropdown-menu">
+                    <a routerLink="/cuenta" class="dropdown-item">Detalles de cuenta</a>
+                    <button class="dropdown-item text-danger" (click)="cerrarSesion()">Cerrar sesión</button>
+                </div>
+                }
+            </div>
+
+            } @else {
+            <div class="auth-buttons">
+                <button type="button" class="btn-login" (click)="abrirModal('login')">
+                    Iniciar sesión
+                </button>
+            </div>
+            }
+        </div>
+    </div>
+</header>
+
+@if (modalActivo) {
+<app-modal (cerrar)="cerrarModal()">
+    @if (modalActivo === 'login') {
+    <app-login (solicitarRegistro)="abrirModal('register')" (loginExitoso)="cerrarModal()" />
+    } @else {
+    <app-registro (solicitarLogin)="abrirModal('login')" (registroExitoso)="cerrarModal()" />
+    }
+</app-modal>
+}

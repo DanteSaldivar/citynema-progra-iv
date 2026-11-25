@@ -1,0 +1,20 @@
+<div class="movie-card">
+    <img class="movie-image" [src]="pelicula().poster_url" [alt]="'Póster de ' + pelicula().titulo">
+    <div class="movie-details">
+        <h3 class="movie-title">{{ pelicula().titulo }}</h3>
+
+        <div class="movie-info-row">
+            <!-- Puntuación promedio solicitada por los inversores -->
+            <span class="movie-rating">⭐ {{ resenas().promedio || 'S/C' }}</span>
+
+            <!-- Restricción de edad dinámica -->
+            <span class="movie-age-rating" [ngClass]="{'adult': pelicula().clasificacion === '18'}">
+                {{ pelicula().clasificacion ? '+' + pelicula().clasificacion : 'ATP' }}
+            </span>
+        </div>
+
+        <button class="btn btn-primary buy-tickets-btn" (click)="comprarEntradas()">
+            Comprar Entradas
+        </button>
+    </div>
+</div>

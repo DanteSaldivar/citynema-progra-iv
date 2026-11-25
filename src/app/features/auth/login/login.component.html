@@ -1,0 +1,56 @@
+<div class="auth-card">
+  <h2>Iniciar sesión</h2>
+  <p class="subtitle">
+    Ingresá a tu cuenta para gestionar tus entradas y puntos
+  </p>
+
+  @if (mensajeError()) {
+  <div class="alert-error">{{ mensajeError() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="email">Correo electrónico</label>
+      <input id="email" type="email" formControlName="email" placeholder="ejemplo@correo.com" autocomplete="email" />
+      @if (form.controls.email.touched && form.controls.email.errors) {
+      <div class="field-error">
+        @if (form.controls.email.hasError('required')) {
+        <span>El correo electrónico es obligatorio.</span>
+        } @else if (form.controls.email.hasError('email')) {
+        <span>Ingresá un correo electrónico válido.</span>
+        }
+      </div>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="password">Contraseña</label>
+      <input id="password" type="password" formControlName="password" placeholder="Tu contraseña" autocomplete="current-password"
+  required>
+      @if (form.controls.password.touched && form.controls.password.errors) {
+      <div class="field-error">
+        @if (form.controls.password.hasError('required')) {
+        <span>La contraseña es obligatoria.</span>
+        } @else if (form.controls.password.hasError('minlength')) {
+        <span>La contraseña debe tener al menos 8 caracteres.</span>
+        }
+      </div>
+      }
+    </div>
+
+    <button type="submit" [disabled]="form.invalid || cargando()" class="btn-primary">
+      @if (cargando()) {
+      Ingresando...
+      } @else {
+      Entrar
+      }
+    </button>
+  </form>
+
+  <p class="footer-link">
+    ¿No tenés cuenta?
+    <button type="button" class="auth-switch" (click)="solicitarRegistro.emit()">
+      Registrate acá
+    </button>
+  </p>
+</div>

@@ -1,0 +1,68 @@
+<div class="admin-container">
+    <div class="dashboard-header">
+        <h2>Panel de Control Directivo</h2>
+        <div class="actions">
+            <button class="btn btn-secondary" (click)="exportarPDF()">📄 Exportar PDF</button>
+            <button class="btn btn-secondary" (click)="exportarExcel()">📊 Exportar Excel</button>
+        </div>
+    </div>
+
+    @if (cargando()) {
+    <div class="text-center mt-lg">
+        <p>Cargando métricas del sistema...</p>
+    </div>
+    } @else {
+
+    <!-- KPIs Principales -->
+    <div class="kpi-grid">
+        <div class="card kpi-card">
+            <h3>Facturación (Hoy)</h3>
+            <p class="kpi-value text-primary">\${{ datos().facturacionDiaria | number:'1.2-2' }}</p>
+        </div>
+        <div class="card kpi-card">
+            <h3>Entradas Vendidas (Hoy)</h3>
+            <p class="kpi-value">{{ datos().entradasVendidas }}</p>
+        </div>
+        <div class="card kpi-card">
+            <h3>Candy Estrella</h3>
+            <p class="kpi-value star-item">{{ datos().topCandy[0]?.nombre || 'Sin datos' }}</p>
+            <small>{{ datos().topCandy[0]?.cantidad || 0 }} unidades históricas</small>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Gráfico de Películas Más Vistas -->
+        <div class="card chart-section">
+            <h3>Top Películas (Mes Actual)</h3>
+            <div class="css-bar-chart">
+                @for (peli of datos().topPeliculas; track peli.titulo) {
+                <div class="bar-row">
+                    <span class="bar-label">{{ peli.titulo }}</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" [style.width.%]="calcularPorcentaje(peli.vistas)"></div>
+                    </div>
+                    <span class="bar-number">{{ peli.vistas }}</span>
+                </div>
+                }
+                @if (datos().topPeliculas.length === 0) {
+                <p class="text-muted">No hay ventas registradas este mes.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Log de Actividad (Auditoría) -->
+        <div class="card audit-section">
+            <h3>Registro de Actividad</h3>
+            <ul class="audit-list">
+                @for (log of datos().auditoria; track log.id) {
+                <li class="audit-item">
+                    <span class="time">{{ log.created_at | date:'dd/MM HH:mm' }}</span>
+                    <span class="badge">{{ log.accion }}</span>
+                    <span class="user">{{ log.profiles?.email || 'Sistema' }}</span>
+                </li>
+                }
+            </ul>
+        </div>
+    </div>
+    }
+</div>

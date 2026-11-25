@@ -1,0 +1,222 @@
+<div class="checkout-container">
+
+    <!-- =====================================================
+         COLUMNA 1: PELÍCULA + BUTACAS
+         ===================================================== -->
+    <div class="main-column">
+
+        <div class="card funcion-summary-card">
+
+            <!-- Datos de la función -->
+            <div class="img-placeholder">
+                <img [src]="pelicula()?.poster_url" [alt]="pelicula()?.titulo" class="poster-img">
+            </div>
+            <div class="funcion-details">
+                <span class="detail-item pelicula-titulo"> {{ pelicula()?.titulo }} </span>
+                <span class="detail-item">{{funcion()?.salas.nombre}}</span>
+                <span class="detail-item">R-{{pelicula().clasificacion}}</span>
+                <span class="detail-item">{{funcion()?.formato}} {{funcion()?.idioma}}</span>
+                <span class="detail-item">{{pelicula()?.duracion_min}} min</span>
+                <span class="detail-item">{{funcion()?.inicio | date:'dd/MM/yyyy HH:mm'}}</span>
+            </div>
+        </div>
+        <!-- Butacas elegidas -->
+        <div class="card butacas-card">
+            <h3>butacas elegidas</h3>
+            <div class="butacas-list">
+                @for (butaca of butacasSeleccionadas(); track butaca) {
+                <span class="butaca-item">{{butaca?.fila}}{{butaca?.numero}}</span>
+                }
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- =====================================================
+         COLUMNA 2: WARNING + CANDY + CUPÓN + EMAIL
+         ===================================================== -->
+    <div class="secondary-column">
+
+        <!-- Warning -->
+        <div class="card warning-card">
+
+            @if(pelicula()?.clasificacion != 'ATP') {
+            <h3>⚠️ warning +{{pelicula()?.clasificacion}}</h3>
+
+            <p>
+                Esta película tiene restricción de edad.
+                Se solicitará DNI en el ingreso.
+                Si el espectador es menor, debe ir acompañado
+                de un adulto responsable.
+            </p>
+            }
+
+
+        </div>
+
+
+        <!-- Candy Bar -->
+        <div class="card candy-section">
+            <h3>agregar candy bar</h3>
+            <div class="candy-grid">
+                @for (prod of productosCandy(); track prod.id){
+                <div class="candy-card">
+                    <div class="candy-img-placeholder"> imagen
+
+                    </div>
+                    <div class="candy-info">
+                        <span class="candy-name"> {{ prod.nombre }} </span>
+                        <span class="candy-price"> ${{ prod.precio }} </span>
+                        <button class="btn btn-secondary btn-agregar" (click)="agregarCandy(prod)"> + Agregar </button>
+                    </div>
+                </div> }
+            </div>
+        </div>
+
+
+        <!-- Cupón -->
+        <div class="card form-section input-box">
+
+            <h3>ingresar código descuento</h3>
+
+            <div class="input-group">
+
+                <input type="text" class="input-control" placeholder="CÓDIGO">
+
+                <button class="btn btn-outline">
+                    Aplicar
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- Email -->
+        <div class="card form-section input-box">
+
+            <h3>Email enviar entradas</h3>
+
+            @if (auth.estaAutenticado()) {
+
+            <p class="email-autenticado">
+                <span>
+                    {{ auth.perfil()?.email }}
+                </span>
+            </p>
+
+            } @else {
+
+            <input type="email" class="input-control" [(ngModel)]="emailInvitado" placeholder="tu@email.com">
+
+            }
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         COLUMNA 3: RESUMEN
+         ===================================================== -->
+    <aside class="summary-column">
+
+        <div class="card summary-card">
+
+            <h3 class="resumen-title">
+                resumen
+            </h3>
+
+            <div class="resumen-bloque">
+
+                <h4>butacas elegidas</h4>
+
+                <div class="summary-list">
+                    @if (resumenButacas().estandar.cantidad > 0) {
+                    <div class="summary-item">
+                        <span>Entradas Estándar (x{{ resumenButacas().estandar.cantidad }})</span>
+                        <span>${{ resumenButacas().estandar.subtotal }}</span>
+                    </div>
+                    }
+                    <!-- Mostrar solo si hay entradas VIP -->
+                    @if (resumenButacas().vip.cantidad > 0) {
+                    <div class="summary-item vip-item">
+                        <span>Entradas VIP (x{{ resumenButacas().vip.cantidad }})</span>
+                        <span>${{ resumenButacas().vip.subtotal }}</span>
+                    </div>
+                    }
+                </div>
+
+
+                @if (carritoCandy().length > 0) {
+
+                <div class="resumen-bloque">
+
+                    <h4>candy bar</h4>
+
+                    <div class="summary-list">
+
+                        @for (
+                        item of carritoCandy();
+                        track item.productoId
+                        ) {
+
+                        <div class="summary-item candy">
+
+                            <span>
+                                {{ item.cantidad }}x
+                                {{ item.nombre }}
+                            </span>
+
+                            <span>
+                                ${{ item.cantidad * item.precioUnitario }}
+                            </span>
+
+                        </div>
+
+                        }
+
+                    </div>
+
+                </div>
+
+                }
+
+
+                <hr class="divider">
+
+
+                <div class="total-row">
+
+                    <strong>subtotal</strong>
+
+                    <strong class="total-price">
+                        ${{ calcularTotal() }}
+                    </strong>
+
+                </div>
+
+
+                @if (mensajeError()) {
+
+                <div class="alert-error mt-sm">
+                    {{ mensajeError() }}
+                </div>
+
+                }
+
+
+                <button class="btn btn-primary w-100 btn-pagar" [disabled]="procesando()" (click)="pagar()">
+
+                    {{ procesando() ? 'Procesando...' : 'pagar' }}
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+</div>

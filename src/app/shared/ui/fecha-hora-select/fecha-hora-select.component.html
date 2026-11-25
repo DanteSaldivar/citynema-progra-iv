@@ -1,0 +1,52 @@
+<div class="fecha-hora-select">
+    <label class="select-group">
+        <span class="label-text">Día</span>
+        <select class="input-control" [value]="dia()" (change)="onDiaChange($event)">
+            @for (d of diasDelMes(); track d) {
+            <option [value]="d">{{ d }}</option>
+            }
+        </select>
+    </label>
+
+    <label class="select-group">
+        <span class="label-text">Mes</span>
+        <select class="input-control" [value]="mes()" (change)="onMesChange($event)">
+            @for (m of mesesDisponibles(); track m.valor) {
+            <option [value]="m.valor">{{ m.nombre }}</option>
+            }
+        </select>
+    </label>
+
+    <label class="select-group">
+        <span class="label-text">Año</span>
+        <select class="input-control" [value]="anio()" (change)="onAnioChange($event)">
+            @for (a of anios(); track a) {
+            <option [value]="a">{{ a }}</option>
+            }
+        </select>
+    </label>
+
+    @if(mostrarHora()) {
+    <span class="separator">|</span>
+
+    <label class="select-group">
+        <span class="label-text">Hora</span>
+        <select class="input-control" [value]="hora()" (change)="onHoraChange($event)">
+            @for (h of horas; track h) {
+            <option [value]="h">{{ h.toString().padStart(2, '0') }}</option>
+            }
+        </select>
+    </label>
+
+    <span class="time-colon">:</span>
+
+    <label class="select-group">
+        <span class="label-text">Minuto</span>
+        <select class="input-control" [value]="minuto()" (change)="onMinutoChange($event)">
+            @for (m of minutos; track m) {
+            <option [value]="m">{{ m.toString().padStart(2, '0') }}</option>
+            }
+        </select>
+    </label>
+    }
+</div>

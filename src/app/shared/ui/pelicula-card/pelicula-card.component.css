@@ -1,0 +1,86 @@
+:host {
+    flex: 0 0 calc((100% - 2 * var(--space-md)) / 3.9);
+}
+
+.movie-card {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+    /* Ajusta según el grid de tu layout */
+}
+
+.movie-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+.movie-image {
+    width: 100%;
+    height: 400px;
+    /* Ajusta la altura según la proporción deseada */
+    object-fit: cover;
+    border-bottom: 2px solid var(--color-secondary);
+    /* Separador sutil */
+}
+
+.movie-details {
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.movie-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Trunca títulos largos */
+}
+
+.movie-info-row {
+    display: flex;
+    justify-content: flex-end;
+    /* Alinea la edad a la derecha como en el esquema */
+    align-items: center;
+}
+
+.movie-age-rating {
+    background-color: var(--color-secondary);
+    color: var(--text-main);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.movie-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.movie-rating {
+    color: var(--color-warning);
+    font-weight: bold;
+    font-size: var(--text-sm);
+}
+
+.movie-age-rating.adult {
+    background-color: var(--color-error);
+    color: white;
+}
+
+.buy-tickets-btn {
+    width: 100%;
+    margin-top: var(--space-sm);
+}

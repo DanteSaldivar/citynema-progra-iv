@@ -1,0 +1,94 @@
+.fecha-hora-select {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: nowrap;
+    gap: var(--space-sm);
+
+    width: 100%;
+    padding: var(--space-xs);
+    margin: 0;
+    background: transparent;
+    box-sizing: border-box;
+    border-radius: var(--radius-md);
+    border-color: var(--color-secondary-hover);
+    background: rgba(138, 82, 229, 0.04);
+    border: 1px solid var(--color-secondary-hover);
+    border-radius: var(--radius-md);
+}
+
+.select-group {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
+    gap: var(--space-xs);
+}
+
+.label-text {
+    font-family: var(--font-family);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.2;
+}
+
+select.input-control {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 0 8px;
+    margin: 0;
+
+    font-family: var(--font-family);
+    font-size: var(--text-sm);
+    color: var(--text-main);
+
+    background-color: var(--bg-base);
+    border: 1px solid var(--color-secondary-hover);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+
+    cursor: pointer;
+    outline: none;
+}
+
+select.input-control:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(138, 82, 229, 0.2);
+}
+
+.separator {
+    flex: 0 0 auto;
+    align-self: flex-end;
+    padding-bottom: 12px;
+    color: var(--text-muted);
+}
+
+.time-colon {
+    flex: 0 0 auto;
+    align-self: flex-end;
+    padding-bottom: 9px;
+    color: var(--text-muted);
+    font-size: var(--text-base);
+    font-weight: 600;
+}
+
+/* En móviles, mantener una sola fila */
+@media (max-width: 480px) {
+    .fecha-hora-select {
+        gap: 4px;
+    }
+
+    .select-group {
+        flex: 1 1 0;
+    }
+
+    select.input-control {
+        padding: 0 4px;
+        font-size: var(--text-xs);
+    }
+}

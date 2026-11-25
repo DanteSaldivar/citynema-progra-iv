@@ -1,0 +1,174 @@
+<div class="exito-container">
+
+    @if (orden()) {
+        <!-- Acciones arriba de todo -->
+        <div class="top-actions">
+            <button
+                class="btn btn-primary"
+                [disabled]="generandoPDF()"
+                (click)="descargarPDF()">
+                {{ generandoPDF() ? 'Generando PDF...' : '⬇ Descargar entradas' }}
+            </button>
+
+            <button
+                class="btn btn-secondary"
+                routerLink="/">
+                Volver al inicio
+            </button>
+        </div>
+    }
+
+    <!-- Contenedor principal de la compra -->
+    <main class="compra-container">
+
+        <!-- Marca -->
+        <header class="compra-header">
+            <h1 class="brand">
+                <span>city</span><span class="brand-accent">Nema</span>
+            </h1>
+
+            <div class="separador"></div>
+
+            @if (cargando()) {
+                <p class="subtitle">Estamos preparando tus entradas...</p>
+            } @else if (orden()) {
+                <h2 class="thank-you">
+                    ¡Muchas gracias por confiar en nosotros!
+                </h2>
+
+                <p class="purchase-status">
+                    Compra confirmada
+                </p>
+
+                <p class="purchase-timestamp">
+                {{ fechaConfirmacion() | date:'dd/MM/yyyy HH:mm' }}
+                </p>
+            }
+
+            <div class="separador"></div>
+        </header>
+
+        @if (cargando()) {
+            <div class="estado-carga">
+                <p class="cargando-texto">
+                    Generando tus tickets virtuales...
+                </p>
+            </div>
+        } @else if (orden()) {
+
+            <!-- Entradas -->
+            <section class="tickets-section">
+                <h2 class="section-title">Tus entradas</h2>
+
+                <div class="tickets-list">
+                    @for (entrada of orden().entradas; track entrada.id) {
+                        <article class="ticket-native">
+
+                            <div class="ticket-details">
+                                <span class="ticket-label">ENTRADA DE CINE</span>
+
+                                <h3>{{ entrada.funciones.peliculas.titulo }}</h3>
+
+                                <div class="ticket-data">
+                                    <p>
+                                        <span>Fecha</span>
+                                        <strong>
+                                            {{ entrada.funciones.inicio | date:'dd/MM/yyyy HH:mm' }}
+                                        </strong>
+                                    </p>
+
+                                    <p>
+                                        <span>Sala</span>
+                                        <strong>{{ entrada.funciones.salas.nombre }}</strong>
+                                    </p>
+
+                                    <p>
+                                        <span>Butaca</span>
+                                        <strong>
+                                            Tipo {{ entrada.tipo_butaca | uppercase }}
+                                        </strong>
+                                    </p>
+                                </div>
+
+                                @if (entrada.funciones.peliculas.clasificacion !== 'atp') {
+                                    <p class="text-warning">
+                                        Película +{{ entrada.funciones.peliculas.clasificacion }}.
+                                        Menores acompañados por un adulto.
+                                    </p>
+                                }
+                            </div>
+
+                            <div class="ticket-qr-column">
+                                <div class="ticket-qr-box">
+                                    <img
+                                        [src]="entrada.qrDataUrl"
+                                        alt="QR de acceso al cine">
+
+                                    <small>
+                                        ID: {{ entrada.id | slice:0:8 }}
+                                    </small>
+                                </div>
+
+                                <span class="codigo-label">Código de entrada</span>
+                            </div>
+
+                        </article>
+                    }
+                </div>
+            </section>
+
+            <!-- Candy Bar, si corresponde -->
+            @if (orden().orden_productos && orden().orden_productos.length > 0) {
+                <section class="tickets-section candy-section">
+                    <h2 class="section-title">Retiro de Candy Bar</h2>
+
+                    <article class="ticket-native candy-ticket">
+                        <div class="ticket-details">
+                            <span class="ticket-label">PEDIDO DE CANDY BAR</span>
+                            <h3>Tu pedido</h3>
+
+                            <ul class="candy-list">
+                                @for (item of orden().orden_productos; track $index) {
+                                    <li>
+                                        <span>{{ item.cantidad }}x</span>
+                                        {{ item.productos.nombre }}
+                                    </li>
+                                }
+                            </ul>
+
+                            <p class="candy-instructions">
+                                Presentá este código en la barra para retirar tu pedido.
+                            </p>
+                        </div>
+
+                        <div class="ticket-qr-column">
+                            <div class="ticket-qr-box">
+                                <img
+                                    [src]="orden().qrCandyDataUrl"
+                                    alt="QR de retiro de Candy Bar">
+
+                                <small>
+                                    Orden: {{ orden().id | slice:0:8 }}
+                                </small>
+                            </div>
+
+                            <span class="codigo-label">Código de retiro</span>
+                        </div>
+                    </article>
+                </section>
+            }
+
+        } @else {
+            <div class="error-orden">
+                <h2>No se pudo recuperar tu compra</h2>
+                <p>No encontramos la información de la orden.</p>
+
+                <button class="btn btn-primary" routerLink="/">
+                    Volver al inicio
+                </button>
+            </div>
+        }
+
+    </main>
+</div>
+

@@ -1,0 +1,175 @@
+/* ==========================================================================
+   SISTEMA DE DISEÑO - TOKENS GLOBALES (ADAPTADO A STREMIO)
+   ========================================================================== */
+:root {
+  /* --- 1. Paleta de Colores Base (Oficial de Stremio) --- */
+  --bg-base: #120e1d;         /* Fondo ultra oscuro cinematográfico (Stremio Background) */
+  --bg-surface: #191c24;      /* Fondo de tarjetas, paneles y modales */
+  --bg-surface-hover: #242935;
+  
+  --color-primary: #8a52e5;   /* Violeta icónico de Stremio (Stremio Primary) */
+  --color-primary-hover: #9c6bfc; /* Violeta con más brillo para estados activos/hover */
+  --color-secondary: #242f41; /* Azul apagado para elementos secundarios o badges */
+  --color-secondary-hover: #313f57;
+
+  /* --- 2. Texto y Tipografía --- */
+  --text-main: #ffffff;       /* Texto principal (alto contraste) */
+  --text-muted: #abb2bf;      /* Texto secundario / grisáceo de Stremio */
+  --text-inverse: #ffffff;    /* El violeta de Stremio mantiene buen contraste con texto blanco */
+  
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  /* --- 3. Estados y Validaciones (Acentos Stremio) --- */
+  --color-error: #ff4a5a;     /* Rojo de alertas oficial */
+  --color-error-bg: rgba(255, 74, 90, 0.1);
+  --color-success: #4ef27a;   /* Verde brillante de Stremio */
+  --color-warning: #ffaa00;   /* Naranja/Amarillo de acento */
+
+  /* --- 4. Negocio: Mapa de Butacas --- */
+  --seat-standard: #3a4454;
+  --seat-vip: var(--color-primary); /* Las VIP usan el color de la marca */
+  --seat-accessible: #00b0ff; /* Azul acento brillante */
+  --seat-selected: var(--color-primary-hover);
+  --seat-occupied: #14171f;
+  --seat-border: #000000;
+
+  /* --- 5. Espaciado y Estructura --- */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 50px;
+
+  /* --- 6. Sombras y Profundidad --- */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.8);
+}
+
+/* ==========================================================================
+   RESET Y ESTILOS BASE
+   ========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* ==========================================================================
+   CLASES UTILITARIAS GLOBALES
+   ========================================================================== */
+
+/* Tarjetas (Cards) */
+.card {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Formularios */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-md);
+}
+
+.form-group label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.input-control {
+  background-color: var(--bg-surface-hover);
+  border: 1px solid var(--color-secondary);
+  padding: 0.75rem var(--space-md);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  font-family: var(--font-family);
+  transition: border-color 0.2s ease;
+}
+
+.input-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem var(--space-lg);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--text-base);
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-family: var(--font-family);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--text-inverse);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-hover);
+}
+
+/* Alertas */
+.alert-error {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  border: 1px solid rgba(255, 74, 90, 0.3);
+  margin-bottom: var(--space-md);
+}

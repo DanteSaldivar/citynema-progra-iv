@@ -1,0 +1,67 @@
+<div class="catalogo-container">
+
+    <!-- Panel de Filtros -->
+    <aside class="filtros-panel card">
+        <h3 class="filtros-title">Buscar Película</h3>
+
+        <div class="form-group">
+            <input type="search" class="input-control" placeholder="Título o sinopsis..." [value]="terminoBusqueda()"
+                (input)="terminoBusqueda.set($event.target.value)">
+        </div>
+
+        <h4 class="filtros-subtitle">Filtrar por Género</h4>
+        <div class="generos-list">
+            @for (genero of generos(); track genero.id) {
+            <label class="checkbox-label">
+                <input type="checkbox" [checked]="seleccionados().includes(genero.id)"
+                    (change)="toggleGenero(genero.id)">
+                <span class="custom-checkbox"></span>
+                {{ genero.nombre }}
+            </label>
+            }
+        </div>
+    </aside>
+
+    <!-- Grilla de Resultados -->
+    <main class="resultados-panel">
+        <div class="resultados-header">
+            <h2>Cartelera</h2>
+            <span class="resultados-count">{{ peliculas().length }} películas encontradas</span>
+        </div>
+
+        @if (cargando()) {
+        <div class="movies-grid">
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+        </div>
+        } @else if (peliculas().length === 0) {
+        <div class="empty-state card">
+            <h3>No encontramos resultados</h3>
+            <p class="text-muted">Intentá con otros términos o quitá algunos filtros de género.</p>
+            <button class="btn btn-secondary mt-sm" (click)="limpiarFiltros()">Limpiar filtros</button>
+        </div>
+        } @else {
+        <div class="movies-grid">
+            @for (pelicula of peliculas(); track pelicula.id) {
+            <div class="card movie-card">
+                <img [src]="pelicula.poster_url || 'assets/placeholder.jpg'" [alt]="pelicula.titulo"
+                    class="movie-poster">
+                <div class="movie-info">
+                    <h3>{{ pelicula.titulo }}</h3>
+                    <div class="movie-meta">
+                        <span class="badge clasificacion">{{ pelicula.clasificacion | uppercase }}</span>
+                        <span class="duracion">{{ pelicula.duracion_min }} min</span>
+                    </div>
+                    <p class="sinopsis-corta">{{ pelicula.sinopsis }}</p>
+                    <button class="btn btn-primary w-100 mt-sm" [routerLink]="['/pelicula', pelicula.id]">
+                        Ver Funciones
+                    </button>
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </main>
+
+</div>

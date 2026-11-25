@@ -1,0 +1,131 @@
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+  color: var(--text-main);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+h2 {
+  margin-top: 0;
+  color: var(--color-primary);
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: var(--space-md);
+}
+
+label {
+  font-size: var(--text-sm);
+  color: #ccc;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--color-secondary-hover);
+  padding: 0.65rem 0.8rem;
+  color: var(--text-main);
+  border-radius: 6px;
+  font-size: var(--text-sm);
+}
+
+input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--space-lg);
+  padding: 0.75rem 1rem;
+
+  background: var(--color-primary);
+  color: var(--text-main);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--color-primary-hover);
+  outline-offset: 3px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+}
+
+.alert-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: var(--text-sm);
+}
+
+.field-error {
+  margin-top: 0.35rem;
+  color: var(--color-error);
+  font-size: var(--text-xs);
+}
+
+.form-group input.ng-invalid.ng-touched {
+  border-color: var(--color-error);
+}
+
+.form-group input.ng-valid.ng-touched {
+  border-color: var(--color-success);
+}
+
+.footer-link {
+  font-size: var(--text-sm);
+  text-align: center;
+  margin-top: var(--space-lg);
+  color: var(--text-muted);
+}
+
+.auth-switch {
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: var(--color-primary-hover);
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-switch:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,110 @@
+<div class="admin-container">
+    <div class="page-header">
+        <h2>Programación de Funciones</h2>
+        <p class="text-muted"> El sistema asignará la sala automáticamente evitando superposiciones y respetando los 30
+            minutos de limpieza. </p>
+    </div>
+
+    <div class="card form-card">
+        <form (ngSubmit)="crearFuncion()" #f="ngForm">
+
+            <div class="form-header">
+                <div>
+                    <h3>Programar nueva función</h3>
+                    <span class="text-muted">
+                        Completá los datos de la función.
+                    </span>
+                </div>
+
+                <button type="button" class="btn btn-secondary" (click)="abrirAltaPelicula()">
+                    + Agregar película
+                </button>
+            </div>
+
+            <div class="form-divider"></div>
+
+            <div class="form-group">
+                <label>Película</label>
+
+                <select class="input-control" [(ngModel)]="formulario.peliculaId" name="peliculaId" required>
+                    <option value="">Seleccione una película...</option>
+
+                    @for (p of peliculas(); track p.id) {
+                    <option [value]="p.id">
+                        {{ p.titulo }} ({{ p.duracion_min }} min)
+                    </option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fecha y Hora de Inicio</label>
+
+                    <app-fecha-hora-select [fechaMinima]="fechaMinima" [mostrarHora]="true"
+                        (valorCambio)="onFechaHoraCambio($event)" />
+                </div>
+
+                <div class="form-group price-group">
+                    <label>Precio Base ($)</label>
+
+                    <input type="number" class="input-control" [(ngModel)]="formulario.precioBase" name="precioBase"
+                        required min="1000">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Formato</label>
+
+                    <select class="input-control" [(ngModel)]="formulario.formato" name="formato" required>
+                        <option value="2D">2D</option>
+                        <option value="3D">3D</option>
+                        <option value="4D">4D</option>
+                        <option value="5D">5D</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Idioma</label>
+
+                    <select class="input-control" [(ngModel)]="formulario.idioma" name="idioma" required>
+                        <option value="Castellano">Castellano</option>
+                        <option value="Subtitulada">Subtitulada</option>
+                    </select>
+                </div>
+            </div>
+
+            @if (mensajeError()) {
+            <div class="alert-error mt-sm">
+                {{ mensajeError() }}
+            </div>
+            }
+
+            @if (resultadoExito()) {
+            <div class="alert-success mt-sm">
+                ✅ ¡Función programada con éxito!<br>
+                El sistema ha asignado automáticamente la
+                <strong>{{ resultadoExito() }}</strong>.
+            </div>
+            }
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" [disabled]="procesando() || f.invalid">
+                    {{ procesando()
+                    ? 'Buscando sala disponible...'
+                    : 'Programar Función'
+                    }}
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+@if (mostrarAltaPelicula()) {
+<app-modal [titulo]="'Alta de película'" [clase]="'modal-pelicula'" (cerrar)="cerrarAltaPelicula()">
+    <app-alta-pelicula (cancelar)="cerrarAltaPelicula()" (peliculaCreada)="alCrearPelicula()" />
+</app-modal>
+}

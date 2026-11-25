@@ -1,0 +1,262 @@
+<div class="cuenta-container">
+
+    @if (cargando()) {
+
+    <div class="loading">
+        Cargando tu información...
+    </div>
+
+    } @else {
+
+    <!-- ==============================
+             DATOS DE CUENTA
+        =============================== -->
+    <section class="cuenta-section datos-cuenta">
+
+        <div class="section-header">
+            <span class="section-label">MI PERFIL</span>
+            <h1>Datos de cuenta</h1>
+        </div>
+
+        <div class="datos-usuario">
+            <div class="dato-principal">
+                <span class="dato-label">Nombre:</span>
+                <span class="dato-valor">
+                    {{ perfil()?.nombre }}
+                </span>
+            </div>
+
+            <div class="dato-principal">
+                <span class="dato-label">Email:</span>
+                <span class="dato-valor">
+                    {{ perfil()?.email }}
+                </span>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- ==============================
+             SALDOS
+        =============================== -->
+    <section class="cuenta-section">
+
+        <div class="section-header">
+            <h2>Mis beneficios</h2>
+        </div>
+
+        <div class="saldos-grid">
+
+            <div class="saldo-card">
+                <div class="saldo-info">
+                    <span class="saldo-label">Puntos acumulados</span>
+
+                    <strong class="saldo-valor">
+                        {{ perfilDatos()?.saldoPuntos || 0 }}
+                    </strong>
+
+                    <span class="saldo-description">
+                        Puntos disponibles
+                    </span>
+                </div>
+            </div>
+
+
+            <div class="saldo-card">
+                <div class="saldo-info">
+                    <span class="saldo-label">Saldo a favor</span>
+
+                    <strong class="saldo-valor">
+                        ${{ perfilDatos()?.saldoCredito || 0 }}
+                    </strong>
+
+                    <span class="saldo-description">
+                        Disponible para futuras compras
+                    </span>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==============================
+             HISTORIAL DE PELÍCULAS
+        =============================== -->
+    <section class="cuenta-section historial-section">
+
+        <div class="section-header">
+            <span class="section-label">HISTORIAL DE PELICULAS</span>
+        </div>
+
+        <!-- Tu componente de historial iría acá -->
+        <app-mis-peliculas></app-mis-peliculas>
+
+    </section>
+
+
+    <!-- ==============================
+             MIS ENTRADAS
+        =============================== -->
+    <section class="cuenta-section entradas-section">
+
+        <div class="section-header">
+            <span class="section-label">TUS COMPRAS</span>
+            <h2>Mis entradas</h2>
+            <p>Consultá las entradas que compraste.</p>
+        </div>
+
+
+        @if (historial().length === 0) {
+
+        <div class="empty-state">
+            <div class="empty-icon">🎟</div>
+
+            <h3>No tenés entradas todavía</h3>
+
+            <p>
+                Cuando compres entradas para una película,
+                aparecerán acá.
+            </p>
+        </div>
+
+        } @else {
+
+        <div class="entradas-list">
+
+            @for (orden of historial(); track orden.id) {
+
+            <article class="entrada-card" [class.cancelada]="orden.estado === 'cancelada'">
+
+                <div class="entrada-info">
+
+                    <span class="entrada-estado" [class.estado-pagada]="orden.estado === 'pagada'"
+                        [class.estado-cancelada]="orden.estado === 'cancelada'">
+
+                        {{ orden.estado | uppercase }}
+
+                    </span>
+
+                    <h3>
+                        Orden #{{ orden.id | slice:0:8 }}
+                    </h3>
+
+                    <span class="entrada-fecha">
+                        {{ orden.created_at | date:'dd/MM/yyyy' }}
+                    </span>
+
+                </div>
+
+
+                <div class="entrada-total">
+
+                    <span>Total</span>
+
+                    <strong>
+                        ${{ orden.total }}
+                    </strong>
+
+                </div>
+
+
+                <div class="entrada-acciones">
+
+                    @if (orden.estado === 'pagada') {
+
+                    <button class="btn btn-primary" (click)="abrirModalCancelacion(orden)"
+                        [disabled]="procesandoCancelacion()">
+                        Cancelar Compra
+                    </button>
+
+                    <small>
+                        Devolución en créditos.
+                        Válido hasta 2hs antes.
+                    </small>
+
+                    } @else {
+
+                    <span class="cancelada-text">
+                        Saldo reintegrado
+                    </span>
+
+                    }
+
+                </div>
+
+            </article>
+
+            }
+
+        </div>
+
+        }
+
+    </section>
+
+    }
+
+</div>
+
+@if (mostrarModalCancelacion) {
+<app-modal titulo="Cancelar compra" (cerrar)="cerrarModalCancelacion()">
+
+    <div class="modal-cancelacion">
+
+        @if (estadoModal === 'confirmacion'){
+
+            <h3>Cancelar compra</h3>
+
+        <p class="subtitle">
+            ¿Estás seguro de que querés cancelar esta compra?
+             El importe será reintegrado a tu
+            <strong>saldo a favor</strong>.
+        </p>
+
+        
+
+        <div class="modal-acciones">
+
+            <button type="button" class="btn-secondary" (click)="cerrarModalCancelacion()">
+                Volver
+            </button>
+
+            <button type="button" class="btn-warning" (click)="confirmarCancelacion()"
+                [disabled]="procesandoCancelacion()">
+
+                @if (procesandoCancelacion()) {
+                Cancelando...
+                } @else {
+                Cancelar compra
+                }
+
+            </button>
+
+        </div>
+
+        } @else if (estadoModal === 'error') {
+
+        <h3>Ocurrió un problema</h3>
+
+        <div class="alert-error">
+          {{ mensajeModal }}
+        </div>
+
+        <div class="modal-acciones">
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="cerrarModalCancelacion()">
+            Cerrar
+          </button>
+        </div>
+
+      }
+
+        
+
+    </div>
+
+</app-modal>
+}
