@@ -322,7 +322,7 @@ export class AdminFuncionesService {
     if (errEntradas) return fail(traducirError(errEntradas));
     if ((count ?? 0) > 0) {
       return fail(
-        `No se puede desactivar esta función porque ya tiene ${count} entrada(s) vendida(s). Este caso se resuelve mediante el proceso de cancelación de función con reembolso (fase posterior).`
+        `No se puede desactivar esta función porque ya tiene ${count} entrada(s) vendida(s).`
       );
     }
 
