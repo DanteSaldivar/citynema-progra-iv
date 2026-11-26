@@ -1,39 +1,41 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { AdminConfigService, Combo, Cupon } from '../admin-config.service';
 import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { ToastService } from '../../../core/services/toast.service';
+import { AdminConfigService, Cupon } from '../admin-config.service';
 
 @Component({
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   selector: 'app-admin-config',
   styleUrl: './admin-config.component.css',
   templateUrl: './admin-config.component.html',
 })
 export class AdminConfigComponent implements OnInit {
-
-  private configService = inject(AdminConfigService);
+  private readonly configService = inject(AdminConfigService);
+  private readonly toast = inject(ToastService);
 
   procesando = signal(false);
   cupones = signal<Cupon[]>([]);
-  combos = signal<Combo[]>([]);
 
-  nuevoCupon: Cupon = { codigo: '', porcentaje: 20, tipo: 'primera_compra', edad_minima: null, activo: true };
-  nuevoCombo: Combo = { nombre: '', descripcion: '', precio: 0, activo: true };
+  nuevoCupon: Cupon = {
+    codigo: '',
+    porcentaje: 20,
+    tipo: 'primera_compra',
+    edad_minima: null,
+    activo: true,
+  };
 
   ngOnInit() {
-    this.cargarDatos();
+    void this.cargarDatos();
   }
 
   async cargarDatos() {
     try {
-      const [cups, combs] = await Promise.all([
-        this.configService.getCupones(),
-        this.configService.getCombos()
-      ]);
+      const cups = await this.configService.getCupones();
       this.cupones.set(cups);
-      this.combos.set(combs);
-    } catch (e) {
-      console.error(e);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'Error al cargar cupones.');
     }
   }
 
@@ -42,9 +44,16 @@ export class AdminConfigComponent implements OnInit {
     try {
       await this.configService.guardarCupon(this.nuevoCupon);
       await this.cargarDatos();
-      this.nuevoCupon = { codigo: '', porcentaje: 20, tipo: 'primera_compra', edad_minima: null, activo: true };
-    } catch (e: any) {
-      alert(e.message);
+      this.nuevoCupon = {
+        codigo: '',
+        porcentaje: 20,
+        tipo: 'primera_compra',
+        edad_minima: null,
+        activo: true,
+      };
+      this.toast.exito('Cupón guardado.');
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'Error guardando el cupón.');
     } finally {
       this.procesando.set(false);
     }
@@ -55,28 +64,8 @@ export class AdminConfigComponent implements OnInit {
     try {
       await this.configService.toggleEstadoCupon(cupon.id, cupon.activo);
       await this.cargarDatos();
-    } catch (e: any) { alert(e.message); }
-  }
-
-  async crearCombo() {
-    this.procesando.set(true);
-    try {
-      await this.configService.guardarCombo(this.nuevoCombo);
-      await this.cargarDatos();
-      this.nuevoCombo = { nombre: '', descripcion: '', precio: 0, activo: true };
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
-      this.procesando.set(false);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'Error al actualizar el cupón.');
     }
   }
-
-  async toggleCombo(combo: Combo) {
-    if (!combo.id) return;
-    try {
-      await this.configService.toggleEstadoCombo(combo.id, combo.activo);
-      await this.cargarDatos();
-    } catch (e: any) { alert(e.message); }
-  }
-
 }

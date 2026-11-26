@@ -1,7 +1,10 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { SupabaseService } from '../supabase.service';
-import { Perfil, RolUsuario } from '../models/database.types';
+import { Perfil, RolUsuario, TipoSangre } from '../models/database.types';
+import { ROLES_USUARIO } from '../models/constantes';
+import { ClavePermisoAdmin, ItemMenuAdmin, PERMISOS_ADMIN } from './permisos';
+import { Result, fail, ok } from '../utils/result';
+import { traducirError } from '../utils/errores';
 
 export interface RegistroDTO {
   email: string;
@@ -9,45 +12,44 @@ export interface RegistroDTO {
   nombre: string;
   apellido: string;
   fecha_nacimiento: string; // YYYY-MM-DD
-  tipo_sangre: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+  tipo_sangre: TipoSangre;
   color_ojos: string;
   dias_vacaciones: number;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-
   private readonly supabaseService = inject(SupabaseService);
 
-  // Signals de estado de sesión
   private perfilSignal = signal<Perfil | null>(null);
   private cargandoSignal = signal<boolean>(true);
 
-  // Computeds públicos
   readonly perfil = computed(() => this.perfilSignal());
   readonly estaAutenticado = computed(() => !!this.perfilSignal());
   readonly rol = computed<RolUsuario | null>(() => this.perfilSignal()?.rol ?? null);
-  readonly esAdmin = computed(() => this.perfilSignal()?.rol === 'admin');
-  readonly esEmpleado = computed(() => this.perfilSignal()?.rol === 'empleado');
-  readonly esCliente = computed(() => this.perfilSignal()?.rol === 'cliente');
+  readonly esAdmin = computed(() => this.perfilSignal()?.rol === ROLES_USUARIO.ADMIN);
+  readonly esEmpleado = computed(() => this.perfilSignal()?.rol === ROLES_USUARIO.EMPLEADO);
+  readonly esCliente = computed(() => this.perfilSignal()?.rol === ROLES_USUARIO.CLIENTE);
   readonly cargando = computed(() => this.cargandoSignal());
 
   private inicializacion: Promise<void>;
 
-  constructor(private router: Router) {
-     this.inicializacion = this.inicializarSesion();
+  constructor() {
+    this.inicializacion = this.inicializarSesion();
   }
 
   async esperarInicializacion(): Promise<void> {
-  return this.inicializacion;
-}
+    return this.inicializacion;
+  }
 
   private async inicializarSesion(): Promise<void> {
     try {
-      const { data: { session } } = await this.supabaseService.client.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await this.supabaseService.client.auth.getSession();
+
       if (session?.user) {
         await this.cargarPerfil(session.user.id);
       }
@@ -56,7 +58,7 @@ export class AuthService {
     }
 
     // Escucha cambios en el estado de autenticación (login, logout, refresh)
-    this.supabaseService.client.auth.onAuthStateChange(async (event, session) => {
+    this.supabaseService.client.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         await this.cargarPerfil(session.user.id);
       } else {
@@ -84,41 +86,68 @@ export class AuthService {
   }
 
   /**
-   * RF-AUT-01: Registro con los 7 campos requeridos por el cliente (01/01).
-   * Nota de defensa oral: No usamos triggers en SQL. El servicio crea la cuenta
-   * en Supabase Auth y luego inserta el registro en public.profiles en secuencia.
+   * Gancho para roles configurables (se ampliará en el Anexo).
+   * Por ahora: rol 'admin' posee todos los permisos y otros roles ninguno.
    */
-  async registrar(dto: RegistroDTO): Promise<void> {
+  tienePermiso(_permiso: ClavePermisoAdmin): boolean {
+    return this.rol() === ROLES_USUARIO.ADMIN;
+  }
+
+  obtenerMenuAdmin(): ItemMenuAdmin[] {
+    return (Object.keys(PERMISOS_ADMIN) as ClavePermisoAdmin[])
+      .filter((clave) => this.tienePermiso(clave))
+      .map((clave) => ({
+        clave,
+        etiqueta: PERMISOS_ADMIN[clave].etiqueta,
+        ruta: PERMISOS_ADMIN[clave].ruta,
+      }));
+  }
+
+  /**
+   * RF-AUT-01: Registro con los 7 campos requeridos por el cliente.
+   * Crea la cuenta en Supabase Auth e inserta en public.profiles en secuencia.
+   */
+  async registrar(dto: RegistroDTO): Promise<Result<Perfil>> {
     // 1. Crear usuario en Auth
     const { data: authData, error: authError } = await this.supabaseService.client.auth.signUp({
-      email: dto.email,
-      password: dto.password
+      email: dto.email.trim(),
+      password: dto.password,
     });
 
     if (authError || !authData.user) {
-      throw new Error(authError?.message || 'Error al crear credenciales de acceso.');
+      return fail(traducirError(authError ?? 'Error al crear credenciales de acceso.'));
     }
 
-    // 2. Insertar perfil en public.profiles (RN: rol por defecto es 'cliente')
-    const { error: profileError } = await this.supabaseService.client
-      .from('profiles')
-      .insert({
-        id: authData.user.id,
-        email: dto.email,
-        nombre: dto.nombre,
-        apellido: dto.apellido,
-        fecha_nacimiento: dto.fecha_nacimiento,
-        tipo_sangre: dto.tipo_sangre,
-        color_ojos: dto.color_ojos,
-        dias_vacaciones: dto.dias_vacaciones,
-        rol: 'cliente'
-      });
+    // Si Supabase tiene activada la confirmación por correo, signUp devuelve user sin session
+    if (!authData.session) {
+      return fail(
+        'La cuenta se creó pero requiere confirmación de email en Supabase. Revisá tu casilla o desactivá "Confirm email" en Auth -> Providers -> Email.'
+      );
+    }
+
+    // 2. Insertar perfil en public.profiles (rol por defecto: 'cliente')
+    const { error: profileError } = await this.supabaseService.client.from('profiles').insert({
+      id: authData.user.id,
+      email: dto.email.trim(),
+      nombre: dto.nombre.trim(),
+      apellido: dto.apellido.trim(),
+      fecha_nacimiento: dto.fecha_nacimiento,
+      tipo_sangre: dto.tipo_sangre,
+      color_ojos: dto.color_ojos.trim(),
+      dias_vacaciones: Number(dto.dias_vacaciones),
+      rol: ROLES_USUARIO.CLIENTE,
+    });
 
     if (profileError) {
-      throw new Error(`Error al guardar perfil de usuario: ${profileError.message}`);
+      return fail(traducirError(profileError));
     }
 
-    await this.cargarPerfil(authData.user.id);
+    const perfil = await this.cargarPerfil(authData.user.id);
+    if (!perfil) {
+      return fail('La cuenta se creó, pero no se pudo cargar el perfil del usuario.');
+    }
+
+    return ok(perfil);
   }
 
   /**
@@ -127,11 +156,11 @@ export class AuthService {
   async iniciarSesion(email: string, pass: string): Promise<Perfil> {
     const { data, error } = await this.supabaseService.client.auth.signInWithPassword({
       email,
-      password: pass
+      password: pass,
     });
 
     if (error || !data.user) {
-      throw new Error(error?.message || 'Credenciales inválidas.');
+      throw new Error(traducirError(error ?? 'Credenciales inválidas.'));
     }
 
     const perfil = await this.cargarPerfil(data.user.id);
@@ -139,12 +168,8 @@ export class AuthService {
     return perfil;
   }
 
-  /**
-   * Cierre de sesión.
-   */
   async cerrarSesion(): Promise<void> {
     await this.supabaseService.client.auth.signOut();
     this.perfilSignal.set(null);
   }
-
 }

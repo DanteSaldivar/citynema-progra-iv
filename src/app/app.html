@@ -1,2 +1,11 @@
-<app-navbar></app-navbar>
-<router-outlet />
+@if (auth.cargando()) {
+  <div class="session-splash" role="status" aria-live="polite">
+    <div class="splash-spinner" aria-hidden="true"></div>
+    <p>Cargando cityNema...</p>
+  </div>
+} @else {
+  <app-navbar />
+  <router-outlet />
+}
+<app-toast-container />
+<app-modal-host />

@@ -1,0 +1,267 @@
+<div class="candy-page">
+    @if (cargando()) {
+    <div class="loading-state">Cargando Candy Bar...</div>
+    } @else if (mensajeError()) {
+    <div class="empty-state" role="alert">
+        <p>{{ mensajeError() }}</p>
+        <a routerLink="/catalogo" class="btn btn-secondary">Volver a cartelera</a>
+    </div>
+    } @else {
+    <header class="candy-header">
+        <div class="header-info">
+            <a [routerLink]="['/compra/asientos', carrito.funcionId()]" class="back-link">
+                ← Cambiar butacas
+            </a>
+            <h2>🍿 Candy Bar & Combos</h2>
+            @if (peliculaTitulo()) {
+            <span class="text-muted">{{ peliculaTitulo() }} · Butacas: {{ etiquetasButacas() }}</span>
+            }
+        </div>
+
+        <div class="header-actions">
+            @if (segundosRestantes() > 0) {
+            <span class="timer-pill" aria-live="polite">⏱ {{ tiempoRestanteFormateado() }}</span>
+
+            @if (carrito.puedeExtenderHold() && segundosRestantes() <= 120) { <button type="button"
+                class="btn btn-sm btn-outline" (click)="extenderTiempo()">
+                + Extender tiempo
+                </button>
+                }
+                }
+                <button type="button" class="btn btn-secondary" (click)="continuarSinCandy()">
+                    Continuar sin candy →
+                </button>
+        </div>
+    </header>
+
+    <div class="candy-layout">
+        <!-- COLUMNA IZQUIERDA: COMBOS DESTACADOS + CATEGORÍAS POR CHIPS -->
+        <main class="catalogo-columna">
+            <!-- COMBOS DESTACADOS (siempre arriba y bien visibles) -->
+            @if (combosDestacados().length > 0) {
+            <section class="bloque-seccion" aria-label="Combos destacados">
+                <div class="seccion-titulo">
+                    <h3>⭐ Combos Destacados</h3>
+                    @if (carrito.entradasCubiertasPorCombos() > 0) {
+                    <span class="badge badge-info">
+                        🎟️ {{ carrito.entradasCubiertasPorCombos() }}/{{ carrito.butacasIds().length }} entrada(s)
+                        cubiertas por combo
+                    </span>
+                    }
+                </div>
+
+                <div class="combos-grid">
+                    @for (combo of combosDestacados(); track combo.id) {
+                    <article class="card combo-card destacado">
+                        @if (combo.imagen_url) {
+                        <img [src]="combo.imagen_url" [alt]="combo.nombre" class="item-img" />
+                        } @else {
+                        <div class="item-img-placeholder" aria-hidden="true">🎁</div>
+                        }
+
+                        <div class="item-body">
+                            <div class="item-top">
+                                <strong>{{ combo.nombre }}</strong>
+                                @if (combo.incluye_entradas > 0) {
+                                <span class="badge-entrada">Incluye {{ combo.incluye_entradas }} entrada(s)</span>
+                                }
+                            </div>
+
+                            @if (combo.descripcion) {
+                            <p class="item-desc">{{ combo.descripcion }}</p>
+                            }
+
+                            @if (combo.items.length > 0) {
+                            <p class="combo-incluye">
+                                @for (it of combo.items; track it.producto_id; let last = $last) {
+                                {{ it.cantidad }}x {{ it.producto_nombre }}{{ !last ? ' · ' : '' }}
+                                }
+                            </p>
+                            }
+
+                            <div class="item-footer">
+                                <strong class="precio">{{ combo.precio | currency:'ARS':'symbol-narrow':'1.0-0'
+                                    }}</strong>
+
+                                <div class="qty-stepper">
+                                    <button type="button" class="btn-qty"
+                                        [disabled]="carrito.cantidadDe('combo', combo.id) === 0"
+                                        (click)="restarCombo(combo)" [attr.aria-label]="'Quitar ' + combo.nombre">
+                                        −
+                                    </button>
+                                    <span class="qty-val">{{ carrito.cantidadDe('combo', combo.id) }}</span>
+                                    <button type="button" class="btn-qty primary" (click)="sumarCombo(combo)"
+                                        [attr.aria-label]="'Agregar ' + combo.nombre">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                    }
+                </div>
+            </section>
+            }
+
+            <!-- PESTAÑAS / CHIPS DE CATEGORÍAS + COMBOS REGULARES -->
+            <section class="bloque-seccion" aria-label="Productos por categoría">
+                <div class="chips-bar" role="tablist">
+                    @for (cat of categorias(); track cat.id) {
+                    <button type="button" class="chip-btn" [class.active]="categoriaSeleccionadaId() === cat.id"
+                        (click)="seleccionarCategoria(cat.id)">
+                        {{ cat.nombre }}
+                    </button>
+                    }
+                    @if (combosRegulares().length > 0) {
+                    <button type="button" class="chip-btn" [class.active]="categoriaSeleccionadaId() === 'otros_combos'"
+                        (click)="seleccionarCategoria('otros_combos')">
+                        Otros Combos ({{ combosRegulares().length }})
+                    </button>
+                    }
+                    <button type="button" class="chip-btn" [class.active]="categoriaSeleccionadaId() === 'todas'"
+                        (click)="seleccionarCategoria('todas')">
+                        Todos
+                    </button>
+                </div>
+
+                @if (categoriaSeleccionadaId() === 'otros_combos') {
+                <div class="productos-grid mt-sm">
+                    @for (combo of combosRegulares(); track combo.id) {
+                    <article class="card producto-card">
+                        @if (combo.imagen_url) {
+                        <img [src]="combo.imagen_url" [alt]="combo.nombre" class="item-img" />
+                        } @else {
+                        <div class="item-img-placeholder" aria-hidden="true">🎁</div>
+                        }
+
+                        <div class="item-body">
+                            <div class="item-top">
+                                <strong>{{ combo.nombre }}</strong>
+                                @if (combo.incluye_entradas > 0) {
+                                <span class="badge-entrada">+{{ combo.incluye_entradas }} entrada(s)</span>
+                                }
+                            </div>
+                            @if (combo.items.length > 0) {
+                            <p class="combo-incluye">
+                                @for (it of combo.items; track it.producto_id; let last = $last) {
+                                {{ it.cantidad }}x {{ it.producto_nombre }}{{ !last ? ' · ' : '' }}
+                                }
+                            </p>
+                            }
+
+                            <div class="item-footer">
+                                <strong class="precio">{{ combo.precio | currency:'ARS':'symbol-narrow':'1.0-0'
+                                    }}</strong>
+                                <div class="qty-stepper">
+                                    <button type="button" class="btn-qty"
+                                        [disabled]="carrito.cantidadDe('combo', combo.id) === 0"
+                                        (click)="restarCombo(combo)">
+                                        −
+                                    </button>
+                                    <span class="qty-val">{{ carrito.cantidadDe('combo', combo.id) }}</span>
+                                    <button type="button" class="btn-qty primary" (click)="sumarCombo(combo)">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                    }
+                </div>
+                } @else if (productosFiltrados().length === 0) {
+                <p class="text-muted mt-md">No hay productos activos en esta categoría.</p>
+                } @else {
+                <div class="productos-grid mt-sm">
+                    @for (prod of productosFiltrados(); track prod.id) {
+                    <article class="card producto-card">
+                        @if (prod.imagen_url) {
+                        <img [src]="prod.imagen_url" [alt]="prod.nombre" class="item-img" />
+                        } @else {
+                        <div class="item-img-placeholder" aria-hidden="true">🍿</div>
+                        }
+
+                        <div class="item-body">
+                            <strong>{{ prod.nombre }}</strong>
+                            @if (prod.descripcion) {
+                            <p class="item-desc">{{ prod.descripcion }}</p>
+                            }
+
+                            <div class="item-footer">
+                                <strong class="precio">{{ prod.precio | currency:'ARS':'symbol-narrow':'1.0-0'
+                                    }}</strong>
+
+                                <div class="qty-stepper">
+                                    <button type="button" class="btn-qty"
+                                        [disabled]="carrito.cantidadDe('producto', prod.id) === 0"
+                                        (click)="restarProducto(prod)" [attr.aria-label]="'Quitar ' + prod.nombre">
+                                        −
+                                    </button>
+                                    <span class="qty-val">{{ carrito.cantidadDe('producto', prod.id) }}</span>
+                                    <button type="button" class="btn-qty primary" (click)="sumarProducto(prod)"
+                                        [attr.aria-label]="'Agregar ' + prod.nombre">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                    }
+                </div>
+                }
+            </section>
+        </main>
+
+        <!-- COLUMNA DERECHA / STICKY FOOTER: RESUMEN FIJO DEL CARRITO -->
+        <aside class="resumen-columna" aria-label="Resumen de compra">
+            <div class="card resumen-card">
+                <h3>Tu pedido</h3>
+
+                <div class="resumen-bloque">
+                    <div class="resumen-fila">
+                        <span>Entradas ({{ carrito.butacas().length }}: {{ etiquetasButacas() }})</span>
+                        <strong>
+                            {{ carrito.desgloseSubtotal().subtotalEntradasBruto | currency:'ARS':'symbol-narrow':'1.0-0'
+                            }}
+                        </strong>
+                    </div>
+
+                    @if (carrito.desgloseSubtotal().descuentoEntradasPorCombos > 0) {
+                    <div class="resumen-fila texto-ahorro">
+                        <span>Entradas cubiertas por combo</span>
+                        <span>
+                            −{{ carrito.desgloseSubtotal().descuentoEntradasPorCombos |
+                            currency:'ARS':'symbol-narrow':'1.0-0' }}
+                        </span>
+                    </div>
+                    }
+                </div>
+
+                @if (carrito.lineasCandyConSubtotal().length > 0) {
+                <div class="resumen-bloque">
+                    <small class="text-muted">Candy Bar</small>
+                    @for (item of carrito.lineasCandyConSubtotal(); track item.tipo + '-' + item.id) {
+                    <div class="resumen-fila">
+                        <span>{{ item.cantidad }}x {{ item.nombre }}</span>
+                        <span>{{ item.subtotalLinea | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
+                    </div>
+                    }
+                </div>
+                }
+
+                <div class="resumen-total">
+                    <span>Subtotal</span>
+                    <strong>
+                        {{ carrito.desgloseSubtotal().subtotalGeneral | currency:'ARS':'symbol-narrow':'1.0-0' }}
+                    </strong>
+                </div>
+
+                <div class="resumen-acciones">
+                    <button type="button" class="btn btn-primary w-100" (click)="continuarConCandy()">
+                        {{ carrito.itemsCandy().length > 0 ? 'Continuar al Checkout' : 'Continuar sin candy' }}
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+    }
+</div>

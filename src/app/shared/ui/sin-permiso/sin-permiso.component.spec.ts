@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AdminFuncionesComponent } from './admin-funciones.component';
+import { SinPermisoComponent } from './sin-permiso.component';
 
-describe('AdminFuncionesComponent', () => {
-  let component: AdminFuncionesComponent;
-  let fixture: ComponentFixture<AdminFuncionesComponent>;
+describe('SinPermisoComponent', () => {
+  let component: SinPermisoComponent;
+  let fixture: ComponentFixture<SinPermisoComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AdminFuncionesComponent],
+      imports: [SinPermisoComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AdminFuncionesComponent);
+    fixture = TestBed.createComponent(SinPermisoComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

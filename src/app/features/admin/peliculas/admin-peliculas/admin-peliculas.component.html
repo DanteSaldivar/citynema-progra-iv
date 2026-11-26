@@ -1,0 +1,273 @@
+<section class="admin-peliculas-page">
+      <header class="page-header">
+        <div>
+          <h2>Gestión de Películas y Géneros</h2>
+          <p class="text-muted">
+            Administrá la cartelera, preventas, géneros y visibilidad en el catálogo.
+          </p>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="btn-sec" (click)="abrirGestionGeneros()">
+            Gestionar Géneros
+          </button>
+          <button type="button" class="btn-pri" (click)="abrirNuevaPelicula()">
+            + Nueva Película
+          </button>
+        </div>
+      </header>
+
+      <!-- Filtros -->
+      <div class="filtros-bar">
+        <input
+          type="search"
+          class="input-ctrl input-busqueda"
+          placeholder="Buscar por título..."
+          [ngModel]="busqueda()"
+          (ngModelChange)="onBusquedaChange($event)"
+        />
+
+        <select
+          class="input-ctrl"
+          [ngModel]="filtroEstado()"
+          (ngModelChange)="onEstadoChange($event)"
+        >
+          <option value="todos">Todos los estados</option>
+          @for (op of estadosOpciones; track op.valor) {
+            <option [value]="op.valor">{{ op.etiqueta }}</option>
+          }
+        </select>
+
+        <label class="check-filtro">
+          <input
+            type="checkbox"
+            [ngModel]="soloActivas()"
+            (ngModelChange)="onSoloActivasChange($event)"
+          />
+          <span>Sólo activas</span>
+        </label>
+      </div>
+
+      <!-- Estados loading / error / vacío / listado -->
+      @if (cargando()) {
+        <div class="estado-box" role="status">Cargando películas...</div>
+      } @else if (errorCarga()) {
+        <div class="estado-box estado-err" role="alert">
+          <p>{{ errorCarga() }}</p>
+          <button type="button" class="btn-sec" (click)="cargarPeliculas()">Reintentar</button>
+        </div>
+      } @else if (peliculas().length === 0) {
+        <div class="estado-box">
+          No se encontraron películas con los filtros seleccionados.
+        </div>
+      } @else {
+        <div class="tabla-wrap">
+          <table class="tabla-admin">
+            <thead>
+              <tr>
+                <th>Película</th>
+                <th>Estreno</th>
+                <th>Clasif.</th>
+                <th>Estado</th>
+                <th>Géneros</th>
+                <th>Preventa</th>
+                <th>Activa</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of peliculas(); track p.id) {
+                <tr [class.fila-inactiva]="!p.activa">
+                  <td>
+                    <div class="celda-titulo">
+                      @if (p.poster_url) {
+                        <img [src]="p.poster_url" [alt]="p.titulo" class="mini-poster" />
+                      }
+                      <div class="titulo-meta">
+                        <strong>{{ p.titulo }}</strong>
+                        <small class="d-block text-muted">
+                          {{ p.duracion_min }} min
+                          @if (p.destacada) {
+                            · <span class="badge-dest">★ Destacada #{{ p.orden_destacada ?? 1 }}</span>
+                          }
+                        </small>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="nowrap">{{ formatearEstreno(p.fecha_estreno) }}</td>
+                  <td class="nowrap">{{ etiquetaClasif(p) }}</td>
+                  <td class="nowrap">{{ etiquetaEstado(p) }}</td>
+                  <td>
+                    <div class="tags-wrap">
+                      @for (g of p.generos; track g.id) {
+                        <span class="tag-gen">{{ g.nombre }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="nowrap">
+                    @if (p.preventa_habilitada) {
+                      <span>{{ p.preventa_dias }}d (-{{ p.preventa_pct ?? 0 }}%)</span>
+                    } @else {
+                      <span class="text-muted">No</span>
+                    }
+                  </td>
+                  <td class="nowrap">
+                    <span [class]="p.activa ? 'badge-ok' : 'badge-off'">
+                      {{ p.activa ? 'Activa' : 'Inactiva' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="celda-acciones">
+                      <button type="button" class="btn-sm" (click)="abrirEditarPelicula(p)">
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-sm"
+                        [class.btn-warn]="p.activa"
+                        (click)="toggleActiva(p)"
+                      >
+                        {{ p.activa ? 'Desactivar' : 'Activar' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="paginacion-bar">
+          <span class="text-muted">
+            Mostrando {{ peliculas().length }} de {{ totalRegistros() }} películas
+          </span>
+          <div class="pag-btns">
+            <button
+              type="button"
+              class="btn-sm"
+              [disabled]="pagina() <= 1"
+              (click)="cambiarPagina(pagina() - 1)"
+            >
+              Anterior
+            </button>
+            <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
+            <button
+              type="button"
+              class="btn-sm"
+              [disabled]="pagina() >= totalPaginas()"
+              (click)="cambiarPagina(pagina() + 1)"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Modal Alta / Edición de Película -->
+    @if (modalPeliculaAbierto()) {
+      <app-modal
+        [titulo]="peliculaEnEdicion() ? 'Editar película' : 'Alta de película'"
+        [clase]="'modal-pelicula'"
+        (cerrar)="cerrarModalPelicula()"
+      >
+        <app-alta-pelicula
+          [peliculaEditar]="peliculaEnEdicion()"
+          (cancelar)="cerrarModalPelicula()"
+          (peliculaCreada)="onPeliculaGuardada()"
+        />
+      </app-modal>
+    }
+
+    <!-- Modal ABM de Géneros (ampliado y paginado sin scroll interno) -->
+    @if (modalGenerosAbierto()) {
+      <app-modal
+        [titulo]="'Administración de Géneros'"
+        [clase]="'modal-generos'"
+        (cerrar)="cerrarGestionGeneros()"
+      >
+        <div class="generos-abm">
+          <div class="generos-header">
+            <h3>Géneros de Películas</h3>
+            <p class="text-muted">Creá, renombrá o eliminá categorías disponibles para la cartelera.</p>
+          </div>
+
+          <form class="genero-form" (submit)="guardarGenero($event)">
+            <input
+              type="text"
+              class="input-ctrl"
+              placeholder="Nombre del género (ej. Ciencia Ficción)"
+              [ngModel]="nombreGeneroForm()"
+              (ngModelChange)="nombreGeneroForm.set($event)"
+              name="nombreGenero"
+              maxlength="60"
+              required
+            />
+            <button type="submit" class="btn-pri" [disabled]="guardandoGenero()">
+              {{ generoEditandoId() ? 'Actualizar género' : '+ Agregar género' }}
+            </button>
+            @if (generoEditandoId()) {
+              <button type="button" class="btn-sec" (click)="cancelarEdicionGenero()">
+                Cancelar
+              </button>
+            }
+          </form>
+
+          @if (cargandoGeneros()) {
+            <div class="estado-box">Cargando géneros...</div>
+          } @else if (generos().length === 0) {
+            <div class="estado-box">No hay géneros registrados.</div>
+          } @else {
+            <div class="grid-generos">
+              @for (g of generosPaginados(); track g.id) {
+                <div class="genero-card" [class.editando]="generoEditandoId() === g.id">
+                  <div class="genero-info">
+                    <strong>{{ g.nombre }}</strong>
+                    <small class="text-muted">{{ g.cantidad_peliculas }} película(s) asociada(s)</small>
+                  </div>
+                  <div class="gen-actions">
+                    <button type="button" class="btn-sm" (click)="iniciarEdicionGenero(g)">
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-sm btn-warn"
+                      (click)="eliminarGenero(g)"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (totalPaginasGeneros() > 1) {
+              <div class="paginacion-bar paginacion-modal">
+                <span class="text-muted">
+                  Total: {{ generos().length }} géneros · Página {{ paginaGeneros() }} de {{ totalPaginasGeneros() }}
+                </span>
+                <div class="pag-btns">
+                  <button
+                    type="button"
+                    class="btn-sm"
+                    [disabled]="paginaGeneros() <= 1"
+                    (click)="cambiarPaginaGeneros(paginaGeneros() - 1)"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-sm"
+                    [disabled]="paginaGeneros() >= totalPaginasGeneros()"
+                    (click)="cambiarPaginaGeneros(paginaGeneros() + 1)"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </app-modal>
+    }

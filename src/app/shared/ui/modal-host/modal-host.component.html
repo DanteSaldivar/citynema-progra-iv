@@ -1,0 +1,59 @@
+@if (modal.activo(); as cfg) {
+<div class="modal-backdrop" role="dialog" aria-modal="true" [attr.aria-labelledby]="'modal-titulo'"
+    (click)="onCancelar()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+        <h3 id="modal-titulo" class="modal-title">{{ cfg.titulo }}</h3>
+
+        @if (cfg.mensaje) {
+        <p class="modal-body">{{ cfg.mensaje }}</p>
+        }
+
+        @if (cfg.tipo === 'formulario' && cfg.campos) {
+        <form class="modal-form" (submit)="onSubmitForm($event)">
+            @for (campo of cfg.campos; track campo.clave) {
+            <div class="modal-field">
+                <label [for]="'modal-' + campo.clave">{{ campo.etiqueta }}</label>
+
+                @if (campo.tipo === 'textarea') {
+                <textarea [id]="'modal-' + campo.clave" rows="3" [placeholder]="campo.placeholder ?? ''"
+                    [required]="!!campo.requerido" [value]="valores()[campo.clave] ?? ''"
+                    (input)="actualizarCampo(campo.clave, $event)"></textarea>
+                } @else if (campo.tipo === 'select') {
+                <select [id]="'modal-' + campo.clave" [required]="!!campo.requerido"
+                    [value]="valores()[campo.clave] ?? ''" (change)="actualizarCampo(campo.clave, $event)">
+                    @for (op of campo.opciones ?? []; track op.valor) {
+                    <option [value]="op.valor">{{ op.etiqueta }}</option>
+                    }
+                </select>
+                } @else {
+                <input [id]="'modal-' + campo.clave" [type]="campo.tipo" [placeholder]="campo.placeholder ?? ''"
+                    [required]="!!campo.requerido" [value]="valores()[campo.clave] ?? ''"
+                    (input)="actualizarCampo(campo.clave, $event)" />
+                }
+            </div>
+            }
+
+            <div class="modal-actions">
+                <button type="button" class="btn-sec" (click)="onCancelar()">
+                    {{ cfg.textoCancelar ?? 'Cancelar' }}
+                </button>
+                <button type="submit" class="btn-pri">
+                    {{ cfg.textoConfirmar ?? 'Guardar' }}
+                </button>
+            </div>
+        </form>
+        } @else {
+        <div class="modal-actions">
+            @if (cfg.tipo === 'confirmar') {
+            <button type="button" class="btn-sec" (click)="onCancelar()">
+                {{ cfg.textoCancelar ?? 'Cancelar' }}
+            </button>
+            }
+            <button type="button" [class]="cfg.peligroso ? 'btn-danger' : 'btn-pri'" (click)="onConfirmar()">
+                {{ cfg.textoConfirmar ?? 'Aceptar' }}
+            </button>
+        </div>
+        }
+    </div>
+</div>
+}

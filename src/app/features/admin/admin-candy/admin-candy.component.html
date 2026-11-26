@@ -1,0 +1,487 @@
+<div class="admin-container">
+    <header class="page-header">
+        <div>
+            <h2>Gestión de Candy Bar y Combos</h2>
+            <p class="text-muted">Administrá categorías, productos individuales y combos con cantidades reales.</p>
+        </div>
+
+        <div class="tabs-bar" role="tablist">
+            <button type="button" class="tab-btn" [class.active]="pestana() === 'productos'"
+                (click)="seleccionarPestana('productos')">
+                <i class="fa-solid fa-popcorn"></i> Productos ({{ totalProductos() }})
+            </button>
+            <button type="button" class="tab-btn" [class.active]="pestana() === 'categorias'"
+                (click)="seleccionarPestana('categorias')">
+                <i class="fa-solid fa-layer-group"></i> Categorías ({{ categorias().length }})
+            </button>
+            <button type="button" class="tab-btn" [class.active]="pestana() === 'combos'"
+                (click)="seleccionarPestana('combos')">
+                <i class="fa-solid fa-gift"></i> Combos ({{ combos().length }})
+            </button>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 1: PRODUCTOS                                                  -->
+    <!-- ===================================================================== -->
+    @if (pestana() === 'productos') {
+    <div class="split-grid">
+        <section class="card form-card">
+            <h3>{{ productoEditandoId() ? 'Editar producto' : 'Nuevo producto' }}</h3>
+
+            <form [formGroup]="formProducto" (ngSubmit)="guardarProducto()">
+                <div class="form-group">
+                    <label>Categoría *</label>
+                    <select class="input-control" formControlName="categoria_id">
+                        <option value="" disabled>Seleccioná categoría</option>
+                        @for (cat of categorias(); track cat.id) {
+                        <option [value]="cat.id">
+                            {{ cat.nombre }} {{ !cat.activa ? '(Inactiva)' : '' }}
+                        </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group mt-sm">
+                    <label>Nombre *</label>
+                    <input type="text" class="input-control" formControlName="nombre"
+                        placeholder="Ej: Pochoclo Grande" />
+                </div>
+
+                <div class="form-group mt-sm">
+                    <label>Descripción</label>
+                    <textarea class="input-control" rows="2" formControlName="descripcion"
+                        placeholder="Ej: Balde de pochoclos dulces o salados"></textarea>
+                </div>
+
+                <div class="form-row mt-sm">
+                    <div class="form-group">
+                        <label>Precio ($) *</label>
+                        <input type="number" class="input-control" formControlName="precio" min="1" step="100" />
+                    </div>
+
+                    <div class="form-group checkbox-inline">
+                        <label>
+                            <input type="checkbox" formControlName="activo" />
+                            Producto activo
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group mt-sm">
+                    <span class="field-label">Imagen (opcional · JPG, PNG o WebP · máx. 5 MB)</span>
+                    <label class="poster-dropzone">
+                        <input type="file" class="file-input" accept="image/jpeg,image/png,image/webp"
+                            (change)="onSeleccionarImagenProducto($event)" />
+                        @if (previewProductoUrl(); as prev) {
+                        <img [src]="prev" alt="Vista previa del producto" class="img-preview" />
+                        <span class="poster-change">Cambiar imagen</span>
+                        } @else {
+                        <span class="poster-placeholder-icon" aria-hidden="true"><i class="fa-solid fa-popcorn"></i></span>
+                        <span class="poster-change">+ Seleccionar imagen</span>
+                        }
+                        <p class="file-name">
+                            {{ archivoProducto()?.name || 'Sin imagen (se mostrará ícono por defecto)' }}
+                        </p>
+                    </label>
+                </div>
+
+                <div class="form-actions mt-md">
+                    <button type="submit" class="btn btn-primary"
+                        [disabled]="formProducto.invalid || guardandoProducto()">
+                        {{ guardandoProducto() ? 'Guardando...' : productoEditandoId() ? 'Guardar cambios' : 'Crear
+                        producto' }}
+                    </button>
+                    @if (productoEditandoId()) {
+                    <button type="button" class="btn btn-secondary" (click)="cancelarEdicionProducto()">
+                        Cancelar
+                    </button>
+                    }
+                </div>
+            </form>
+        </section>
+
+        <section class="card list-card">
+            <div class="list-toolbar">
+                <input type="search" class="input-control" placeholder="Buscar producto..." [value]="filtroBusqueda()"
+                    (input)="onFiltroBusquedaChange($any($event.target).value)" />
+
+                <select class="input-control" [value]="filtroCategoriaId()"
+                    (change)="onFiltroCategoriaChange($any($event.target).value)">
+                    <option value="todas">Todas las categorías</option>
+                    @for (cat of categorias(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.nombre }}</option>
+                    }
+                </select>
+            </div>
+
+            @if (cargandoProductos()) {
+            <p class="text-muted mt-md">Cargando productos...</p>
+            } @else if (productos().length === 0) {
+            <p class="text-muted mt-md">No se encontraron productos para este filtro.</p>
+            } @else {
+            <div class="items-list mt-sm">
+                @for (prod of productos(); track prod.id) {
+                <article class="item-row" [class.inactivo]="!prod.activo">
+                    <div class="item-main">
+                        @if (prod.imagen_url) {
+                        <img [src]="prod.imagen_url" [alt]="prod.nombre" class="thumb-img" />
+                        } @else {
+                        <div class="thumb-placeholder" aria-hidden="true"><i class="fa-solid fa-popcorn"></i></div>
+                        }
+
+                        <div>
+                            <div class="item-title-line">
+                                <strong>{{ prod.nombre }}</strong>
+                                <span class="badge">{{ prod.categoria_nombre }}</span>
+                                @if (!prod.activo) {
+                                <span class="badge badge-danger">Inactivo</span>
+                                }
+                                @if (prod.en_uso_combo_o_recompensa) {
+                                <span class="badge badge-info"
+                                    title="Usado en combos o recompensas: solo admisible baja lógica">
+                                    En combo/recompensa
+                                </span>
+                                }
+                            </div>
+                            @if (prod.descripcion) {
+                            <small class="text-muted d-block">{{ prod.descripcion }}</small>
+                            }
+                            <strong class="precio-texto">{{ prod.precio | currency:'ARS':'symbol-narrow':'1.0-0'
+                                }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="item-actions">
+                        <button type="button" class="btn btn-sm btn-secondary" (click)="editarProducto(prod)">
+                            Editar
+                        </button>
+                        <button type="button" class="btn btn-sm" [class.btn-outline-danger]="prod.activo"
+                            [class.btn-outline-success]="!prod.activo" (click)="toggleProducto(prod)">
+                            {{ prod.activo ? 'Desactivar' : 'Activar' }}
+                        </button>
+                    </div>
+                </article>
+                }
+            </div>
+
+            @if (totalPaginasProductos() > 1) {
+            <div class="pagination-bar mt-md">
+                <button type="button" class="btn btn-sm btn-secondary" [disabled]="paginaProductos() <= 1"
+                    (click)="cambiarPaginaProductos(paginaProductos() - 1)">
+                    Anterior
+                </button>
+                <span>Página {{ paginaProductos() }} de {{ totalPaginasProductos() }}</span>
+                <button type="button" class="btn btn-sm btn-secondary"
+                    [disabled]="paginaProductos() >= totalPaginasProductos()"
+                    (click)="cambiarPaginaProductos(paginaProductos() + 1)">
+                    Siguiente
+                </button>
+            </div>
+            }
+            }
+        </section>
+    </div>
+    }
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 2: CATEGORÍAS                                                 -->
+    <!-- ===================================================================== -->
+    @if (pestana() === 'categorias') {
+    <div class="split-grid">
+        <section class="card form-card">
+            <h3>{{ categoriaEditandoId() ? 'Editar categoría' : 'Nueva categoría' }}</h3>
+
+            <form [formGroup]="formCategoria" (ngSubmit)="guardarCategoria()">
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" class="input-control" formControlName="nombre" placeholder="Ej: Bebidas" />
+                </div>
+
+                <div class="form-row mt-sm">
+                    <div class="form-group">
+                        <label>Orden de aparición</label>
+                        <input type="number" class="input-control" formControlName="orden" min="0" />
+                    </div>
+
+                    <div class="form-group checkbox-inline">
+                        <label>
+                            <input type="checkbox" formControlName="activa" />
+                            Categoría activa
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions mt-md">
+                    <button type="submit" class="btn btn-primary"
+                        [disabled]="formCategoria.invalid || guardandoCategoria()">
+                        {{ guardandoCategoria() ? 'Guardando...' : categoriaEditandoId() ? 'Guardar cambios' : 'Crear
+                        categoría' }}
+                    </button>
+                    @if (categoriaEditandoId()) {
+                    <button type="button" class="btn btn-secondary" (click)="cancelarEdicionCategoria()">
+                        Cancelar
+                    </button>
+                    }
+                </div>
+            </form>
+        </section>
+
+        <section class="card list-card">
+            <h3>Categorías registradas</h3>
+            @if (cargandoCategorias()) {
+            <p class="text-muted">Cargando categorías...</p>
+            } @else if (categorias().length === 0) {
+            <p class="text-muted">No hay categorías creadas todavía.</p>
+            } @else {
+            <div class="items-list mt-sm">
+                @for (cat of categorias(); track cat.id) {
+                <article class="item-row" [class.inactivo]="!cat.activa">
+                    <div>
+                        <strong>{{ cat.nombre }}</strong>
+                        <small class="text-muted d-block">Orden: {{ cat.orden }}</small>
+                    </div>
+
+                    <div class="item-actions">
+                        <button type="button" class="btn btn-sm btn-secondary" (click)="editarCategoria(cat)">
+                            Editar
+                        </button>
+                        <button type="button" class="btn btn-sm" [class.btn-outline-danger]="cat.activa"
+                            [class.btn-outline-success]="!cat.activa" (click)="toggleCategoria(cat)">
+                            {{ cat.activa ? 'Desactivar' : 'Activar' }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                            (click)="solicitarEliminarCategoria(cat)">
+                            Eliminar
+                        </button>
+                    </div>
+                </article>
+                }
+            </div>
+            }
+        </section>
+    </div>
+    }
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 3: COMBOS (con combo_items reales + comparativa ahorro)       -->
+    <!-- ===================================================================== -->
+    @if (pestana() === 'combos') {
+    <div class="split-grid split-grid-combos">
+        <section class="card form-card">
+            <h3>{{ comboEditandoId() ? 'Editar combo' : 'Nuevo combo' }}</h3>
+
+            <form [formGroup]="formCombo" (ngSubmit)="guardarCombo()">
+                <div class="form-group">
+                    <label>Nombre del combo *</label>
+                    <input type="text" class="input-control" formControlName="nombre" placeholder="Ej: Combo Dúo" />
+                </div>
+
+                <div class="form-group mt-sm">
+                    <label>Descripción</label>
+                    <textarea class="input-control" rows="2" formControlName="descripcion"
+                        placeholder="Ej: Ideal para compartir en pareja"></textarea>
+                </div>
+
+                <div class="form-row mt-sm">
+                    <div class="form-group">
+                        <label>Precio fijo del combo ($) *</label>
+                        <input type="number" class="input-control" formControlName="precio" min="1" step="100" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Entradas incluidas (cant.)</label>
+                        <input type="number" class="input-control" formControlName="incluye_entradas" min="0" max="8" />
+                    </div>
+                </div>
+
+                <div class="form-row mt-sm">
+                    <div class="form-group checkbox-inline-compact">
+                        <label>
+                            <input type="checkbox" formControlName="destacado" />
+                            Combo destacado
+                        </label>
+                    </div>
+                    <div class="form-group checkbox-inline-compact">
+                        <label>
+                            <input type="checkbox" formControlName="activo" />
+                            Combo activo
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Productos que componen el combo (combo_items) -->
+                <div class="combo-items-box mt-md" formArrayName="items">
+                    <div class="combo-items-header">
+                        <label>Productos incluidos *</label>
+                        <button type="button" class="btn btn-sm btn-secondary" (click)="agregarFilaItemCombo()">
+                            + Agregar producto
+                        </button>
+                    </div>
+
+                    @for (ctrl of comboItemsArray.controls; track $index; let i = $index) {
+                    <div class="combo-item-row" [formGroupName]="i">
+                        <select class="input-control" formControlName="producto_id">
+                            <option value="" disabled>Seleccioná producto</option>
+                            @for (p of productosParaCombo(); track p.id) {
+                            <option [value]="p.id">
+                                {{ p.nombre }} ({{ p.precio | currency:'ARS':'symbol-narrow':'1.0-0' }})
+                            </option>
+                            }
+                        </select>
+
+                        <input type="number" class="input-control qty-input" formControlName="cantidad" min="1" max="20"
+                            aria-label="Cantidad" />
+
+                        @if (comboItemsArray.length > 1) {
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-quitar-fila"
+                            (click)="quitarFilaItemCombo(i)" aria-label="Quitar fila">
+                            ✕
+                        </button>
+                        }
+                    </div>
+                    }
+                </div>
+
+                <!-- Comparativa: Valor sin combo vs Precio del combo -->
+                <div class="comparativa-box mt-md">
+                    <div>
+                        <small class="text-muted d-block">
+                            Valor sin combo (productos + {{ formCombo.value.incluye_entradas || 0 }} entrada/s a
+                            {{ precioBaseTipicoEntrada() | currency:'ARS':'symbol-narrow':'1.0-0' }}):
+                        </small>
+                        <strong>{{ valorSinComboForm() | currency:'ARS':'symbol-narrow':'1.0-0' }}</strong>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">Ahorro para el cliente:</small>
+                        <strong [class.text-success]="ahorroComboForm() > 0"
+                            [class.text-danger]="ahorroComboForm() < 0">
+                            {{ ahorroComboForm() | currency:'ARS':'symbol-narrow':'1.0-0' }}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="form-group mt-sm">
+                    <span class="field-label">Imagen del combo (opcional · JPG, PNG o WebP · máx. 5 MB)</span>
+                    <label class="poster-dropzone">
+                        <input type="file" class="file-input" accept="image/jpeg,image/png,image/webp"
+                            (change)="onSeleccionarImagenCombo($event)" />
+                        @if (previewComboUrl(); as prev) {
+                        <img [src]="prev" alt="Vista previa del combo" class="img-preview" />
+                        <span class="poster-change">Cambiar imagen</span>
+                        } @else {
+                        <span class="poster-placeholder-icon" aria-hidden="true"> <i class="fa-solid fa-gift"></i></span>
+                        <span class="poster-change">+ Seleccionar imagen</span>
+                        }
+                        <p class="file-name">
+                            {{ archivoCombo()?.name || 'Sin imagen (se mostrará ícono por defecto)' }}
+                        </p>
+                    </label>
+                </div>
+
+                <div class="form-actions mt-md">
+                    <button type="submit" class="btn btn-primary" [disabled]="formCombo.invalid || guardandoCombo()">
+                        {{ guardandoCombo() ? 'Guardando...' : comboEditandoId() ? 'Guardar cambios' : 'Crear combo' }}
+                    </button>
+                    @if (comboEditandoId()) {
+                    <button type="button" class="btn btn-secondary" (click)="cancelarEdicionCombo()">
+                        Cancelar
+                    </button>
+                    }
+                </div>
+            </form>
+        </section>
+
+        <section class="card list-card">
+            <h3>Combos configurados</h3>
+            @if (cargandoCombos()) {
+            <p class="text-muted">Cargando combos...</p>
+            } @else if (combos().length === 0) {
+            <p class="text-muted">No hay combos creados todavía.</p>
+            } @else {
+            <div class="items-list mt-sm">
+                @for (combo of combos(); track combo.id) {
+                <article class="item-row" [class.inactivo]="!combo.activo">
+                    <div class="item-main">
+                        @if (combo.imagen_url) {
+                        <img [src]="combo.imagen_url" [alt]="combo.nombre" class="thumb-img" />
+                        } @else {
+                        <div class="thumb-placeholder" aria-hidden="true"><i class="fa-solid fa-gift"></i></div>
+                        }
+
+                        <div>
+                            <div class="item-title-line">
+                                <strong>{{ combo.nombre }}</strong>
+                                @if (combo.destacado) {
+                                <span class="badge">⭐ Destacado</span>
+                                }
+                                @if (combo.incluye_entradas > 0) {
+                                <span class="badge badge-info">🎟️ Incluye {{ combo.incluye_entradas }}
+                                    entrada(s)</span>
+                                }
+                            </div>
+
+                            @if (combo.descripcion) {
+                            <small class="text-muted d-block">{{ combo.descripcion }}</small>
+                            }
+
+                            <ul class="combo-contenido-list">
+                                @for (it of combo.items; track it.producto_id) {
+                                <li>
+                                    {{ it.cantidad }}x {{ it.producto_nombre }}
+                                    @if (!it.producto_activo) {
+                                    <span class="text-danger">(producto inactivo)</span>
+                                    }
+                                </li>
+                                }
+                            </ul>
+
+                            <div class="combo-precios-linea">
+                                <strong>Precio combo: {{ combo.precio | currency:'ARS':'symbol-narrow':'1.0-0'
+                                    }}</strong>
+                                <span class="text-muted">
+                                    · Valor sin combo: {{ calcularValorSinComboDeItem(combo) |
+                                    currency:'ARS':'symbol-narrow':'1.0-0' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="item-actions">
+                        <button type="button" class="btn btn-sm btn-secondary" (click)="editarCombo(combo)">
+                            Editar
+                        </button>
+                        <button type="button" class="btn btn-sm" [class.btn-outline-danger]="combo.activo"
+                            [class.btn-outline-success]="!combo.activo" (click)="toggleCombo(combo)">
+                            {{ combo.activo ? 'Desactivar' : 'Activar' }}
+                        </button>
+                    </div>
+                </article>
+                }
+            </div>
+            }
+        </section>
+    </div>
+    }
+</div>
+
+<!-- Modal propio de confirmación (sin window.confirm) -->
+@if (categoriaAEliminar(); as cat) {
+<app-modal (cerrar)="categoriaAEliminar.set(null)">
+    <div class="modal-confirm">
+        <h3>Eliminar categoría</h3>
+        <p>
+            ¿Querés eliminar la categoría <strong>{{ cat.nombre }}</strong>? Si tiene productos asociados no se
+            permitirá borrarla.
+        </p>
+        <div class="form-actions mt-md">
+            <button type="button" class="btn btn-outline-danger" (click)="confirmarEliminarCategoria()">
+                Confirmar eliminación
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="categoriaAEliminar.set(null)">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</app-modal>
+}

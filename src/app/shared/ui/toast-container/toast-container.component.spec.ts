@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ExitoCompraComponent } from './exito-compra.component';
+import { ToastContainerComponent } from './toast-container.component';
 
-describe('ExitoCompraComponent', () => {
-  let component: ExitoCompraComponent;
-  let fixture: ComponentFixture<ExitoCompraComponent>;
+describe('ToastContainerComponent', () => {
+  let component: ToastContainerComponent;
+  let fixture: ComponentFixture<ToastContainerComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ExitoCompraComponent],
+      imports: [ToastContainerComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ExitoCompraComponent);
+    fixture = TestBed.createComponent(ToastContainerComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

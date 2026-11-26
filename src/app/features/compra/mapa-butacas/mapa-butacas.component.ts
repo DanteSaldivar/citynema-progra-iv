@@ -1,163 +1,287 @@
-import { Component, computed, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
+import { Component, computed, effect, HostListener, inject, OnDestroy, OnInit, signal, } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ReservasService } from '../reserva.service';
+import { MAX_BUTACAS_POR_COMPRA, TIPOS_BUTACA, TIPO_BUTACA_ETIQUETAS, } from '../../../core/models/constantes';
 import { Butaca } from '../../../core/models/database.types';
-import { CommonModule, CurrencyPipe } from '@angular/common';
-import { FuncionesService } from '../../../core/services/funciones/funciones.service';
-import { ComprasService } from '../compras.service';
+import { FuncionesService } from '../../../core/services/funciones.service';
+import { PreciosService } from '../../../core/services/precios.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { ButacaOcupada, ReservasService } from '../reserva.service';
+import { CarritoService } from '../carrito.service';
+
+interface FilaAgrupada {
+  letra: string;
+  izquierda: Butaca[];
+  centro: Butaca[];
+  derecha: Butaca[];
+}
 
 @Component({
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CurrencyPipe, RouterLink],
   selector: 'app-mapa-butacas',
   styleUrl: './mapa-butacas.component.css',
   templateUrl: './mapa-butacas.component.html',
 })
 export class MapaButacasComponent implements OnInit, OnDestroy {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private reservasService = inject(ReservasService);
-  private funcionesService = inject(FuncionesService);
-  private comprasService = inject(ComprasService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly reservasService = inject(ReservasService);
+  private readonly funcionesService = inject(FuncionesService);
+  private readonly preciosService = inject(PreciosService);
+  private readonly toast = inject(ToastService);
+  private readonly carritoService = inject(CarritoService);
 
-  funcionId!: string;
-  salaId!: string;
-  pelicula: any;
-  cargando = signal<boolean>(true);
-  mensajeError = signal<string | null>(null);
+  funcionId = '';
+  salaId = '';
 
-  butacasFisicas = signal<Butaca[]>([]);
-  precioEntradas = signal<number>(0);
+  readonly maxButacas = MAX_BUTACAS_POR_COMPRA;
+  readonly pelicula = signal<{ titulo: string } | null>(null);
+  readonly precioBase = signal<number>(0);
+  readonly cargando = signal<boolean>(true);
+  readonly mensajeError = signal<string | null>(null);
 
-  continuandoCompra = signal<boolean>(false);
-  procesando = signal<string[]>([]); /// bloqueo optimista
+  readonly butacasFisicas = signal<Butaca[]>([]);
+  readonly continuandoCompra = signal<boolean>(false);
+  readonly procesando = signal<string[]>([]);
 
-  misSeleccionadas = computed(() => this.reservasService.misReservasActivas());
+  // Contador regresivo visible del tiempo restante de reserva
+  readonly segundosRestantes = signal<number>(0);
+  private countdownInterval: ReturnType<typeof setInterval> | null = null;
+  private avisoVencimientoMostrado = false;
 
-  // Computed que reconstruye la grilla de filas (A-T) con sus 3 columnas
-  filasAgrupadas = computed(() => {
+  readonly misSeleccionadas = computed(() => this.reservasService.misReservasActivas());
+
+  readonly butacasSeleccionadasLista = computed(() => {
+    const ids = new Set(this.misSeleccionadas());
+    return this.butacasFisicas()
+      .filter((b) => ids.has(b.id))
+      .sort((a, b) => a.fila.localeCompare(b.fila) || a.numero - b.numero);
+  });
+
+  readonly etiquetasSeleccionadas = computed(() =>
+    this.butacasSeleccionadasLista()
+      .map((b) => `${b.fila}${b.numero}`)
+      .join(', ')
+  );
+
+  readonly precioEntradas = computed(() =>
+    this.preciosService.calcularSubtotalButacas(
+      this.precioBase(),
+      this.butacasSeleccionadasLista()
+    )
+  );
+
+  readonly tieneVIP = computed(() =>
+    this.butacasSeleccionadasLista().some((b) => b.tipo === TIPOS_BUTACA.VIP)
+  );
+
+  readonly precioUnitarioVip = computed(() =>
+    this.preciosService.precioButaca(this.precioBase(), TIPOS_BUTACA.VIP)
+  );
+
+  readonly recargoVipPct = computed(() => this.preciosService.obtenerRecargoVipPct());
+
+  /** Mapa indexado de ocupación para evitar búsquedas lineales en 532 elementos */
+  readonly mapaBloqueadas = computed(() => {
+    const mapa = new Map<string, ButacaOcupada['estado']>();
+    for (const item of this.reservasService.butacasBloqueadas()) {
+      mapa.set(item.id, item.estado);
+    }
+    return mapa;
+  });
+
+  /** Detecta si todas las butacas activas están vendidas o retenidas por otros */
+  readonly funcionAgotada = computed(() => {
+    const totalActivas = this.butacasFisicas().length;
+    if (totalActivas === 0) return false;
+    return this.mapaBloqueadas().size >= totalActivas && this.misSeleccionadas().length === 0;
+  });
+
+  /** Reconstruye grilla de 20 filas (A-T) con bloques izquierda/centro/derecha desde la tabla butacas */
+  readonly filasAgrupadas = computed<FilaAgrupada[]>(() => {
     const butacas = this.butacasFisicas();
     if (!butacas.length) return [];
 
-    const agrupadas: Record<string, { letra: string, izquierda: Butaca[], centro: Butaca[], derecha: Butaca[] }> = {};
-
-    butacas.forEach(b => {
-      if (!agrupadas[b.fila]) agrupadas[b.fila] = { letra: b.fila, izquierda: [], centro: [], derecha: [] };
+    const agrupadas: Record<string, FilaAgrupada> = {};
+    for (const b of butacas) {
+      if (!agrupadas[b.fila]) {
+        agrupadas[b.fila] = { letra: b.fila, izquierda: [], centro: [], derecha: [] };
+      }
       if (b.columna === 'izquierda') agrupadas[b.fila].izquierda.push(b);
       if (b.columna === 'centro') agrupadas[b.fila].centro.push(b);
       if (b.columna === 'derecha') agrupadas[b.fila].derecha.push(b);
-    });
-
-    // Ordenar letras alfabéticamente
-    return Object.values(agrupadas).sort((a, b) => a.letra.localeCompare(b.letra));
-  });
-
-  tieneVIP = computed(() => {
-    const seleccionadas = this.misSeleccionadas();
-    const butacas = this.butacasFisicas();
-    return seleccionadas.some(id => {
-      const b = butacas.find(x => x.id === id);
-      // Las filas VIP definidas por negocio son R, S y T
-      return b && ['R', 'S', 'T'].includes(b.fila);
-    });
-  });
-
-  async actualizarPrecio() {
-    const seleccionadas = this.misSeleccionadas();
-    if (seleccionadas.length > 0) {
-      const datos = await this.comprasService.getDatosCheckout(this.funcionId, seleccionadas);
-      this.precioEntradas.set(this.comprasService.calcularSubtotal(datos.precioBase, datos.butacas));
-    } else {
-      this.precioEntradas.set(0);
     }
 
+    return Object.values(agrupadas)
+      .sort((a, b) => a.letra.localeCompare(b.letra))
+      .map((f) => ({
+        ...f,
+        izquierda: [...f.izquierda].sort((a, b) => a.numero - b.numero),
+        centro: [...f.centro].sort((a, b) => a.numero - b.numero),
+        derecha: [...f.derecha].sort((a, b) => a.numero - b.numero),
+      }));
+  });
+
+  readonly tiempoRestanteFormateado = computed(() => {
+    const total = Math.max(0, this.segundosRestantes());
+    const min = Math.floor(total / 60);
+    const seg = total % 60;
+    return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+  }) 
+  constructor() {
+    effect(() => {
+      const expiraIso = this.reservasService.vencimientoProximo();
+      this.detenerCountdown();
+
+      if (!expiraIso) {
+        this.segundosRestantes.set(0);
+        return;
+      }
+
+      this.avisoVencimientoMostrado = false;
+      const actualizar = () => {
+        const diffSeg = Math.ceil((new Date(expiraIso).getTime() - Date.now()) / 1000);
+        if (diffSeg <= 0) {
+          this.segundosRestantes.set(0);
+          this.detenerCountdown();
+          if (!this.avisoVencimientoMostrado) {
+            this.avisoVencimientoMostrado = true;
+            this.toast.info('El tiempo de reserva de tus butacas venció y fueron liberadas.');
+            void this.reservasService
+              .limpiarReservasVencidasDeFuncion(this.funcionId)
+              .then(() => this.reservasService.cargarOcupacionInicial(this.funcionId));
+          }
+          return;
+        }
+        this.segundosRestantes.set(diffSeg);
+      };
+
+      actualizar();
+      this.countdownInterval = setInterval(actualizar, 1000);
+    });
   }
 
   @HostListener('window:beforeunload')
-  alCerrarPestana() {
-    this.reservasService.limpiarMisReservas();
+  alCerrarPestana(): void {
+    if (!this.continuandoCompra() && this.funcionId) {
+      void this.reservasService.liberarPropiasDeFuncion(this.funcionId);
+    }
   }
 
-  async ngOnInit() {
-    this.funcionId = this.route.snapshot.paramMap.get('funcionId')!;
-    if (this.funcionId) this.cargarMapa();
-    this.pelicula = await this.funcionesService.getNombrePelicula(this.funcionId);
+  async ngOnInit(): Promise<void> {
+    this.funcionId = this.route.snapshot.paramMap.get('funcionId') ?? '';
+    if (!this.funcionId) {
+      this.mensajeError.set('Función no especificada.');
+      this.cargando.set(false);
+      return;
+    }
+
+    await this.cargarMapa();
   }
 
-  async cargarMapa() {
+  async cargarMapa(): Promise<void> {
+    this.cargando.set(true);
+    this.mensajeError.set(null);
+
     try {
-      // 1. El servicio se encarga de la lógica de BD
-      const datos = await this.funcionesService.getButacasDeFuncion(this.funcionId);
+      const [datosSala, peli, funcion] = await Promise.all([
+        this.funcionesService.getButacasDeFuncion(this.funcionId),
+        this.funcionesService.getNombrePelicula(this.funcionId),
+        this.funcionesService.getFuncion(this.funcionId),
+      ]);
 
-      this.salaId = datos.salaId;
-      this.butacasFisicas.set(datos.butacas);
+      this.salaId = datosSala.salaId;
+      this.butacasFisicas.set(datosSala.butacas);
+      this.pelicula.set(peli.length ? { titulo: peli[0].titulo } : null);
+      this.precioBase.set(Number(funcion.precio_base) || 0);
 
-      // 2. Conectar a Realtime
-      await this.reservasService.inicializarTiempoReal(this.funcionId);
-      // las ya seleccionadas
-      if (this.misSeleccionadas().length > 0) {
-        this.actualizarPrecio();
+      const resRt = await this.reservasService.inicializarTiempoReal(this.funcionId);
+      if (!resRt.ok) {
+        this.mensajeError.set(resRt.error);
       }
-
-    } catch (e: any) {
-      this.mensajeError.set(e.message || "Error al cargar el mapa de butacas.");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al cargar el mapa de butacas.';
+      this.mensajeError.set(msg);
     } finally {
       this.cargando.set(false);
     }
   }
 
   estadoButaca(butacaId: string): 'libre' | 'reservada' | 'ocupada' {
-    const bloqueada = this.reservasService.butacasBloqueadas().find(b => b.id === butacaId);
-    return bloqueada ? bloqueada.estado : 'libre';
+    return this.mapaBloqueadas().get(butacaId) ?? 'libre';
   }
 
-  async toggleButaca(butaca: Butaca) {
+  ariaLabelButaca(butaca: Butaca): string {
+    const tipo = TIPO_BUTACA_ETIQUETAS[butaca.tipo] ?? butaca.tipo;
+    if (this.misSeleccionadas().includes(butaca.id)) {
+      return `Fila ${butaca.fila}, butaca ${butaca.numero}, ${tipo}, seleccionada por vos`;
+    }
+    const estado = this.estadoButaca(butaca.id);
+    const textoEstado =
+      estado === 'ocupada'
+        ? 'vendida'
+        : estado === 'reservada'
+          ? 'retenida por otro usuario'
+          : 'libre';
+    return `Fila ${butaca.fila}, butaca ${butaca.numero}, ${tipo}, ${textoEstado}`;
+  }
 
+  async toggleButaca(butaca: Butaca): Promise<void> {
     if (this.procesando().includes(butaca.id)) return;
 
     this.mensajeError.set(null);
-
-    this.procesando.update(p => [...p, butaca.id]);
+    this.procesando.update((p) => [...p, butaca.id]);
 
     try {
       if (this.misSeleccionadas().includes(butaca.id)) {
-        await this.reservasService.liberarButaca(this.funcionId, butaca.id);
-      } else {
-        if (this.misSeleccionadas().length >= 8) {
-          this.mensajeError.set("Máximo 8 butacas por compra.");
-          return;
+        const res = await this.reservasService.liberarButaca(this.funcionId, butaca.id);
+        if (!res.ok) {
+          this.toast.error(res.error);
         }
-
-        const exito = await this.reservasService.reservarButaca(this.funcionId, butaca.id);
-        if (!exito) {
-          this.mensajeError.set("¡Alguien más acaba de seleccionar esta butaca! Elegí otra.");
-        }
+        return;
       }
-      await this.actualizarPrecio();
-      this.actualizarPrecio();
-    } finally {
-      this.procesando.update(p => p.filter(id => id !== butaca.id));
-    }
 
+      if (this.misSeleccionadas().length >= this.maxButacas) {
+        this.toast.info(`Podés seleccionar hasta ${this.maxButacas} butacas por compra.`);
+        return;
+      }
+
+      const resultado = await this.reservasService.reservarButaca(this.funcionId, butaca.id);
+      if (resultado.estado === 'conflicto') {
+        this.toast.error('Esa butaca ya fue tomada por otra persona.');
+      } else if (resultado.estado === 'error') {
+        this.toast.error(resultado.mensaje);
+      }
+    } finally {
+      this.procesando.update((p) => p.filter((id) => id !== butaca.id));
+    }
   }
 
-  continuarCompra() {
-    // Navegamos al checkout enviando la función y las butacas por estado
+  continuarCompra(): void {
+    if (this.misSeleccionadas().length === 0) return;
     this.continuandoCompra.set(true);
-    this.router.navigate(['/compra/checkout'], {
+    this.carritoService.establecerSeleccionButacas(this.funcionId, this.misSeleccionadas());
+    void this.router.navigate(['/compra/candy'], {
       state: {
         funcionId: this.funcionId,
-        butacasIds: this.misSeleccionadas()
-      }
+        butacasIds: this.misSeleccionadas(),
+      },
     });
   }
 
-  ngOnDestroy() {
-    // Si el usuario sale de la página sin comprar, liberamos SUS butacas
-    if (!this.continuandoCompra()) {
-      this.misSeleccionadas().forEach(id => {
-        this.reservasService.liberarButaca(this.funcionId, id);
-      });
-      this.reservasService.limpiarMisReservas();
+  private detenerCountdown(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.detenerCountdown();
+    this.reservasService.limpiarSuscripcion();
+
+    if (!this.continuandoCompra() && this.funcionId) {
+      void this.reservasService.liberarPropiasDeFuncion(this.funcionId);
     }
   }
 }

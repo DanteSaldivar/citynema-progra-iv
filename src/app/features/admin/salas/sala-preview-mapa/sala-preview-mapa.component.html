@@ -1,0 +1,62 @@
+<div class="preview-sala-wrap">
+      <div class="resumen-conteo">
+        <span class="chip-tipo estandar">Estándar: {{ conteos().estandar }}</span>
+        <span class="chip-tipo accesible">Accesibles (J-K): {{ conteos().accesible }}</span>
+        <span class="chip-tipo vip">VIP (R-T): {{ conteos().vip }}</span>
+        <span class="chip-total">Total: {{ butacas().length }} butacas</span>
+      </div>
+
+      <div class="pantalla-cine" aria-hidden="true">PANTALLA</div>
+
+      <div class="sala-grid-preview" role="region" aria-label="Distribución de butacas de la sala">
+        @for (fila of filasAgrupadas(); track fila.letra) {
+          <div class="fila-preview">
+            <span class="fila-letra">{{ fila.letra }}</span>
+
+            <div class="bloque-butacas">
+              @for (b of fila.izquierda; track b.id) {
+                <span
+                  class="asiento-prev"
+                  [class.estandar]="b.tipo === tipos.ESTANDAR"
+                  [class.accesible]="b.tipo === tipos.ACCESIBLE"
+                  [class.vip]="b.tipo === tipos.VIP"
+                  [title]="b.fila + b.numero + ' (' + b.tipo + ')'"
+                >
+                  {{ b.numero }}
+                </span>
+              }
+            </div>
+
+            <div class="bloque-butacas">
+              @for (b of fila.centro; track b.id) {
+                <span
+                  class="asiento-prev"
+                  [class.estandar]="b.tipo === tipos.ESTANDAR"
+                  [class.accesible]="b.tipo === tipos.ACCESIBLE"
+                  [class.vip]="b.tipo === tipos.VIP"
+                  [title]="b.fila + b.numero + ' (' + b.tipo + ')'"
+                >
+                  {{ b.numero }}
+                </span>
+              }
+            </div>
+
+            <div class="bloque-butacas">
+              @for (b of fila.derecha; track b.id) {
+                <span
+                  class="asiento-prev"
+                  [class.estandar]="b.tipo === tipos.ESTANDAR"
+                  [class.accesible]="b.tipo === tipos.ACCESIBLE"
+                  [class.vip]="b.tipo === tipos.VIP"
+                  [title]="b.fila + b.numero + ' (' + b.tipo + ')'"
+                >
+                  {{ b.numero }}
+                </span>
+              }
+            </div>
+
+            <span class="fila-letra">{{ fila.letra }}</span>
+          </div>
+        }
+      </div>
+    </div>

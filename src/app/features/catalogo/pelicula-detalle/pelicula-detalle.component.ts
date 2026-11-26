@@ -1,99 +1,193 @@
-import { CommonModule } from '@angular/common';
+import { CurrencyPipe, UpperCasePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CatalogoService } from '../catalogo.service';
-import { Pelicula } from '../../../core/models/database.types';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CatalogoService, FuncionCatalogoItem, PeliculaConGeneros, } from '../catalogo.service';
+import { ReseniaItem, ResenasService, ResumenResenas, } from '../../reseñas/resenas.service';
+import { CLASIFICACIONES, CLASIFICACION_ETIQUETAS, IDIOMA_ETIQUETAS, } from '../../../core/models/constantes';
+import { ClasificacionPelicula, IdiomaFuncion, } from '../../../core/models/database.types';
+import { ZONA_AR, formatearFecha, obtenerPartesAR, parsearFechaLocalAR, } from '../../../core/utils/fechas';
+
+interface GrupoFuncionesDia {
+  fechaYMD: string;
+  etiquetaCorta: string;
+  etiquetaLarga: string;
+  funciones: FuncionCatalogoItem[];
+}
+
+const formateadorDiaCortoAR = new Intl.DateTimeFormat('es-AR', {
+  timeZone: ZONA_AR,
+  weekday: 'short',
+  day: '2-digit',
+  month: '2-digit',
+});
+
+const formateadorDiaLargoAR = new Intl.DateTimeFormat('es-AR', {
+  timeZone: ZONA_AR,
+  weekday: 'long',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
 
 @Component({
-  imports: [CommonModule],
+  imports: [CurrencyPipe, UpperCasePipe],
   selector: 'app-pelicula-detalle.component',
   styleUrl: './pelicula-detalle.component.css',
   templateUrl: './pelicula-detalle.component.html',
 })
 export class PeliculaDetalleComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly catalogoService = inject(CatalogoService);
+  private readonly resenasService = inject(ResenasService);
 
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private catalogoService = inject(CatalogoService);
+  readonly pelicula = signal<PeliculaConGeneros | null>(null);
+  readonly cargando = signal<boolean>(true);
+  readonly errorCarga = signal<string | null>(null);
 
-  pelicula = signal<Pelicula | null>(null);
-  cargando = signal<boolean>(true);
-  resenas = signal<{ promedio: number, total: number }>({ promedio: 0, total: 0 });
+  // Reseñas (solo lectura en Bloque 3; alta/edición va en Bloque 8)
+  readonly resumenResenas = signal<ResumenResenas>({ promedio: 0, total: 0 });
+  readonly listaResenas = signal<ReseniaItem[]>([]);
+  readonly totalResenas = signal<number>(0);
+  readonly cargandoMasResenas = signal<boolean>(false);
+  private readonly limiteResenasPagina = 5;
 
-  // Array agrupado por día para iterar fácilmente en el HTML
-  funcionesAgrupadas = signal<{ fecha: string, funciones: any[] }[]>([]);
-  fechaSeleccionada = signal<string | null>(null);
+  // Funciones agrupadas por día en zona America/Argentina/Buenos_Aires
+  readonly funcionesAgrupadas = signal<GrupoFuncionesDia[]>([]);
+  readonly fechaSeleccionada = signal<string | null>(null);
 
-  ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.cargarDatos(id);
-    }
-
-  }
-  fechaActiva = computed(() => {
-  const grupos = this.funcionesAgrupadas();
-  const seleccionada = this.fechaSeleccionada();
-  
-  return grupos.find(g => g.fecha === seleccionada)?.fecha
-    ?? grupos[0]?.fecha
-    ?? null;
+  readonly etiquetaClasificacion = computed(() => {
+    const c = this.pelicula()?.clasificacion;
+    if (!c) return 'ATP';
+    return CLASIFICACION_ETIQUETAS[c] ?? String(c).toUpperCase();
   });
 
-  funcionesFechaSeleccionada = computed(() => {
-  const fecha = this.fechaActiva();
+  readonly requiereAdulto = computed(() => {
+    const c = this.pelicula()?.clasificacion;
+    return Boolean(c && c !== (CLASIFICACIONES.ATP as ClasificacionPelicula));
+  });
 
-  return this.funcionesAgrupadas()
-    .find(g => g.fecha === fecha)
-    ?? null;
-});
+  readonly esSoloAdultos = computed(
+    () => this.pelicula()?.clasificacion === (CLASIFICACIONES.MAS_18 as ClasificacionPelicula)
+  );
 
+  readonly fechaActiva = computed(() => {
+    const grupos = this.funcionesAgrupadas();
+    const sel = this.fechaSeleccionada();
+    return grupos.find((g) => g.fechaYMD === sel)?.fechaYMD ?? grupos[0]?.fechaYMD ?? null;
+  });
 
-  async cargarDatos(id: string) {
-    this.cargando.set(true);
-    try {
-      // Cargamos en paralelo para mayor velocidad
-      const [peliculaData, resenasData, funcionesData] = await Promise.all([
-        this.catalogoService.getPeliculaById(id),
-        this.catalogoService.getResumenResenas(id),
-        this.catalogoService.getFuncionesDisponibles(id)
-      ]);
+  readonly funcionesFechaSeleccionada = computed(
+    () => this.funcionesAgrupadas().find((g) => g.fechaYMD === this.fechaActiva()) ?? null
+  );
 
-      this.pelicula.set(peliculaData);
-      this.resenas.set(resenasData);
-      this.agruparFuncionesPorDia(funcionesData || []);
-    } catch (error) {
-      console.error('Error cargando la ficha', error);
-    } finally {
+  readonly hayMasResenas = computed(() => this.listaResenas().length < this.totalResenas());
+
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      void this.cargarDatos(id);
+    } else {
+      this.errorCarga.set('Identificador de película inválido.');
       this.cargando.set(false);
     }
   }
 
-  private agruparFuncionesPorDia(funciones: any[]) {
-    const agrupado = funciones.reduce((acc: any, funcion: any) => {
-      // Extraemos solo la fecha (YYYY-MM-DD)
-      const fecha = new Date(funcion.inicio).toISOString().split('T')[0];
-      if (!acc[fecha]) acc[fecha] = [];
-      acc[fecha].push(funcion);
-      return acc;
-    }, {});
+  async cargarDatos(peliculaId: string): Promise<void> {
+    this.cargando.set(true);
+    this.errorCarga.set(null);
 
-    // Convertimos el objeto en array y ordenamos por fecha
-    const arrayAgrupado = Object.keys(agrupado).map(fecha => ({
-      fecha,
-      funciones: agrupado[fecha]
-    })).sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    const [resPeli, resResumen, resListaResenas, resFunciones] = await Promise.all([
+      this.catalogoService.getPeliculaById(peliculaId),
+      this.resenasService.obtenerResumen(peliculaId),
+      this.resenasService.listarPorPelicula(peliculaId, 0, this.limiteResenasPagina),
+      this.catalogoService.getFuncionesDisponibles(peliculaId),
+    ]);
 
-    this.funcionesAgrupadas.set(arrayAgrupado);
+    if (!resPeli.ok) {
+      this.errorCarga.set(resPeli.error);
+      this.cargando.set(false);
+      return;
+    }
+
+    this.pelicula.set(resPeli.data);
+
+    if (resResumen.ok) {
+      this.resumenResenas.set(resResumen.data);
+    }
+    if (resListaResenas.ok) {
+      this.listaResenas.set(resListaResenas.data.items);
+      this.totalResenas.set(resListaResenas.data.total);
+    }
+    if (resFunciones.ok) {
+      this.agruparFuncionesPorDiaAR(resFunciones.data);
+    }
+
+    this.cargando.set(false);
   }
 
-  comprar(funcionId: string) {
-    // Navegación al mapa de butacas
-    this.router.navigate(['/compra/asientos', funcionId]);
+  async cargarMasResenas(): Promise<void> {
+    const peli = this.pelicula();
+    if (!peli || this.cargandoMasResenas() || !this.hayMasResenas()) return;
+
+    this.cargandoMasResenas.set(true);
+    const res = await this.resenasService.listarPorPelicula(
+      peli.id,
+      this.listaResenas().length,
+      this.limiteResenasPagina
+    );
+    if (res.ok) {
+      this.listaResenas.update((prev) => [...prev, ...res.data.items]);
+      this.totalResenas.set(res.data.total);
+    }
+    this.cargandoMasResenas.set(false);
   }
 
-  seleccionarFecha(fecha: string) {
-    this.fechaSeleccionada.set(fecha);
+  private agruparFuncionesPorDiaAR(funciones: FuncionCatalogoItem[]): void {
+    const mapa = new Map<string, FuncionCatalogoItem[]>();
+
+    for (const fn of funciones) {
+      const p = obtenerPartesAR(fn.inicio);
+      const fechaYMD = `${p.anio}-${String(p.mes).padStart(2, '0')}-${String(p.dia).padStart(2, '0')}`;
+      const lista = mapa.get(fechaYMD) ?? [];
+      lista.push(fn);
+      mapa.set(fechaYMD, lista);
+    }
+
+    const grupos: GrupoFuncionesDia[] = Array.from(mapa.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([fechaYMD, lista]) => {
+        const { anio, mes, dia } = parsearFechaLocalAR(fechaYMD);
+        const refMediodia = new Date(Date.UTC(anio, mes - 1, dia, 15, 0, 0));
+        return {
+          fechaYMD,
+          etiquetaCorta: formateadorDiaCortoAR.format(refMediodia),
+          etiquetaLarga: formateadorDiaLargoAR.format(refMediodia),
+          funciones: lista,
+        };
+      });
+
+    this.funcionesAgrupadas.set(grupos);
   }
 
+  seleccionarFecha(fechaYMD: string): void {
+    this.fechaSeleccionada.set(fechaYMD);
+  }
+
+  formatearHorarioAR(iso: string): string {
+    const p = obtenerPartesAR(iso);
+    return `${String(p.hora).padStart(2, '0')}:${String(p.minuto).padStart(2, '0')}`;
+  }
+
+  formatearFechaResenia(iso: string): string {
+    return formatearFecha(iso);
+  }
+
+  etiquetaIdioma(idioma: IdiomaFuncion): string {
+    return IDIOMA_ETIQUETAS[idioma] ?? idioma;
+  }
+
+  comprar(funcionId: string): void {
+    void this.router.navigate(['/compra/asientos', funcionId]);
+  } 
 }

@@ -47,6 +47,22 @@
     </button>
   </form>
 
+  <div class="quick-access">
+    <span class="quick-access-label">Acceso rápido de prueba:</span>
+    <div class="quick-access-buttons">
+      @for (cuenta of accesosRapidos; track cuenta.email) {
+        <button
+          type="button"
+          class="btn-quick"
+          [disabled]="cargando()"
+          (click)="accesoRapido(cuenta.email, cuenta.password)"
+        >
+          {{ cuenta.etiqueta }}
+        </button>
+      }
+    </div>
+  </div>
+
   <p class="footer-link">
     ¿No tenés cuenta?
     <button type="button" class="auth-switch" (click)="solicitarRegistro.emit()">

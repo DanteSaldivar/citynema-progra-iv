@@ -1,6 +1,7 @@
 /* ==========================================================================
    SISTEMA DE DISEÑO - TOKENS GLOBALES (ADAPTADO A STREMIO)
    ========================================================================== */
+@import '@fortawesome/fontawesome-free/css/all.min.css';
 :root {
   /* --- 1. Paleta de Colores Base (Oficial de Stremio) --- */
   --bg-base: #120e1d;         /* Fondo ultra oscuro cinematográfico (Stremio Background) */

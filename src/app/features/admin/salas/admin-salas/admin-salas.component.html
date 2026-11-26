@@ -1,0 +1,115 @@
+<section class="admin-salas-page">
+    <header class="page-header">
+        <div>
+            <h2>Administración de Salas</h2>
+            <p class="text-muted">
+                Cada sala nueva se crea automáticamente con su grilla reglamentaria de 532 butacas (A-T).
+            </p>
+        </div>
+    </header>
+
+    <!-- Formulario de Alta de Sala -->
+    <div class="card-alta">
+        <h3>Crear nueva sala</h3>
+        <form class="form-alta-sala" [formGroup]="formAlta" (ngSubmit)="crearSala()" novalidate>
+            <div class="campo">
+                <label for="sala-numero">Número de sala</label>
+                <input id="sala-numero" type="number" class="input-ctrl" formControlName="numero" min="1" max="99"
+                    step="1" [disabled]="creando()" />
+            </div>
+
+            <div class="campo campo-nombre">
+                <label for="sala-nombre">Nombre de la sala</label>
+                <input id="sala-nombre" type="text" class="input-ctrl" formControlName="nombre"
+                    placeholder="Ej. Sala 4 - Dolby Atmos" maxlength="60" [disabled]="creando()" />
+            </div>
+
+            <button type="submit" class="btn-pri" [disabled]="formAlta.invalid || creando()">
+                {{ creando() ? 'Generando 532 butacas...' : '+ Crear sala (532 butacas)' }}
+            </button>
+        </form>
+    </div>
+
+    <!-- Estados loading / error / vacío / listado -->
+    @if (cargando()) {
+    <div class="estado-box" role="status">Cargando salas...</div>
+    } @else if (errorCarga()) {
+    <div class="estado-box estado-err" role="alert">
+        <p>{{ errorCarga() }}</p>
+        <button type="button" class="btn-sec" (click)="cargarSalas()">Reintentar</button>
+    </div>
+    } @else if (salas().length === 0) {
+    <div class="estado-box">No hay salas registradas todavía.</div>
+    } @else {
+    <div class="tabla-wrap">
+        <table class="tabla-admin">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Nombre</th>
+                    <th>Capacidad</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (s of salasPaginadas(); track s.id) {
+                <tr [class.fila-inactiva]="!s.activa">
+                    <td class="nowrap"><strong>#{{ s.numero }}</strong></td>
+                    <td>{{ s.nombre }}</td>
+                    <td class="nowrap">{{ s.cantidad_butacas }} butacas</td>
+                    <td class="nowrap">
+                        <span [class]="s.activa ? 'badge-ok' : 'badge-off'">
+                            {{ s.activa ? 'Activa' : 'Inactiva' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="celda-acciones">
+                            <button type="button" class="btn-sm" (click)="abrirVistaPrevia(s)">
+                                Ver distribución
+                            </button>
+                            <button type="button" class="btn-sm" [class.btn-warn]="s.activa" (click)="toggleActiva(s)">
+                                {{ s.activa ? 'Desactivar' : 'Activar' }}
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (totalPaginas() > 1) {
+    <div class="paginacion-bar">
+        <span class="text-muted">
+            Mostrando {{ salasPaginadas().length }} de {{ salas().length }} salas
+        </span>
+        <div class="pag-btns">
+            <button type="button" class="btn-sm" [disabled]="pagina() <= 1" (click)="pagina.set(pagina() - 1)">
+                Anterior
+            </button>
+            <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
+            <button type="button" class="btn-sm" [disabled]="pagina() >= totalPaginas()"
+                (click)="pagina.set(pagina() + 1)">
+                Siguiente
+            </button>
+        </div>
+    </div>
+    }
+    }
+</section>
+
+<!-- Modal Vista Previa de Distribución (solo lectura) -->
+@if (salaPreview(); as sala) {
+<app-modal [titulo]="'Distribución: ' + sala.nombre" [clase]="'modal-preview-sala'" (cerrar)="cerrarVistaPrevia()">
+    <div class="modal-preview-body">
+        <h3>{{ sala.nombre }} (Sala #{{ sala.numero }})</h3>
+
+        @if (cargandoPreview()) {
+        <div class="estado-box">Cargando grilla de butacas...</div>
+        } @else {
+        <app-sala-preview-mapa [butacas]="butacasPreview()" />
+        }
+    </div>
+</app-modal>
+}

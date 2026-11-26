@@ -105,51 +105,42 @@
       }
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="fecha_nacimiento">Fecha de nacimiento</label>
-        <input
-          id="fecha_nacimiento"
-          type="date"
-          formControlName="fecha_nacimiento"
-          autocomplete="bday"
-          [attr.aria-invalid]="form.controls.fecha_nacimiento.invalid && form.controls.fecha_nacimiento.touched"
-        />
+    <div class="form-group">
+      <label>Fecha de nacimiento</label>
+      <app-fecha-hora-select
+        [mostrarHora]="false"
+        [valorInicial]="fechaInicialNacimiento"
+        [fechaMinima]="fechaMinNacimiento"
+        [fechaMaxima]="fechaMaxNacimiento"
+        (valorCambio)="onFechaNacimientoCambio($event)"
+      />
 
-        @if (form.controls.fecha_nacimiento.touched && form.controls.fecha_nacimiento.errors) {
-          <div class="field-error">
-            @if (form.controls.fecha_nacimiento.hasError('required')) {
-              <span>La fecha de nacimiento es obligatoria.</span>
-            } @else if (form.controls.fecha_nacimiento.hasError('fechaFutura')) {
-              <span>La fecha no puede ser futura.</span>
-            }
-          </div>
-        }
-      </div>
-
-      <div class="form-group">
-        <label for="tipo_sangre">Tipo de sangre</label>
-        <select
-          id="tipo_sangre"
-          formControlName="tipo_sangre">
-          <option value="">Seleccionar...</option>
-          <option value="A+">A+</option>
-          <option value="A-">A-</option>
-          <option value="B+">B+</option>
-          <option value="B-">B-</option>
-          <option value="AB+">AB+</option>
-          <option value="AB-">AB-</option>
-          <option value="O+">O+</option>
-          <option value="O-">O-</option>
-        </select>
-
-        @if (form.get('tipo_sangre')?.touched && form.get('tipo_sangre')?.hasError('required')) {
-          <div class="field-error">Seleccioná un tipo de sangre.</div>
-        }
-      </div>
+      @if (form.controls.fecha_nacimiento.touched && form.controls.fecha_nacimiento.errors) {
+        <div class="field-error">
+          @if (form.controls.fecha_nacimiento.hasError('required')) {
+            <span>La fecha de nacimiento es obligatoria.</span>
+          } @else if (form.controls.fecha_nacimiento.hasError('fechaFutura')) {
+            <span>La fecha no puede ser futura.</span>
+          }
+        </div>
+      }
     </div>
 
     <div class="form-row">
+      <div class="form-group">
+        <label for="tipo_sangre">Tipo de sangre</label>
+        <select id="tipo_sangre" formControlName="tipo_sangre">
+          <option value="">Seleccionar...</option>
+          @for (ts of tiposSangre; track ts) {
+            <option [value]="ts">{{ ts }}</option>
+          }
+        </select>
+
+        @if (form.controls.tipo_sangre.touched && form.controls.tipo_sangre.hasError('required')) {
+          <div class="field-error">Seleccioná un tipo de sangre.</div>
+        }
+      </div>
+
       <div class="form-group">
         <label for="color_ojos">Color de ojos</label>
         <input
@@ -161,36 +152,40 @@
 
         @if (form.controls.color_ojos.touched && form.controls.color_ojos.errors) {
           <div class="field-error">
-            @if (form.controls.color_ojos.hasError('maxlength')) {
+            @if (form.controls.color_ojos.hasError('required')) {
+              <span>El color de ojos es obligatorio.</span>
+            } @else if (form.controls.color_ojos.hasError('maxlength')) {
               <span>El texto es demasiado largo.</span>
             }
           </div>
         }
       </div>
+    </div>
 
-      <div class="form-group">
-        <label for="dias_vacaciones">Días de vacaciones / año</label>
-        <input
-          id="dias_vacaciones"
-          type="number"
-          formControlName="dias_vacaciones"
-          min="0"
-          max="365"
-          step="1"
-        />
+    <div class="form-group">
+      <label for="dias_vacaciones">Días de vacaciones / año</label>
+      <input
+        id="dias_vacaciones"
+        type="number"
+        formControlName="dias_vacaciones"
+        min="0"
+        max="365"
+        step="1"
+      />
 
-        @if (form.controls.dias_vacaciones.touched && form.controls.dias_vacaciones.errors) {
-          <div class="field-error">
-            @if (form.controls.dias_vacaciones.hasError('min')) {
-              <span>No puede ser un número negativo.</span>
-            } @else if (form.controls.dias_vacaciones.hasError('max')) {
-              <span>El máximo es 365 días.</span>
-            } @else if (form.controls.dias_vacaciones.hasError('pattern')) {
-              <span>Ingresá un número entero.</span>
-            }
-          </div>
-        }
-      </div>
+      @if (form.controls.dias_vacaciones.touched && form.controls.dias_vacaciones.errors) {
+        <div class="field-error">
+          @if (form.controls.dias_vacaciones.hasError('required')) {
+            <span>Ingresá la cantidad de días de vacaciones.</span>
+          } @else if (form.controls.dias_vacaciones.hasError('min')) {
+            <span>No puede ser un número negativo.</span>
+          } @else if (form.controls.dias_vacaciones.hasError('max')) {
+            <span>El máximo es 365 días.</span>
+          } @else if (form.controls.dias_vacaciones.hasError('pattern')) {
+            <span>Ingresá un número entero.</span>
+          }
+        </div>
+      }
     </div>
 
     <button
@@ -217,4 +212,3 @@
     </button>
   </p>
 </div>
-

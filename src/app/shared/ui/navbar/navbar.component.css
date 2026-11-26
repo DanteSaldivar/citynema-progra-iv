@@ -216,6 +216,26 @@
     outline-offset: 3px;
 }
 
+.admin-dropdown-container {
+  position: relative;
+}
+
+.admin-dropdown-trigger {
+  background: transparent;
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--radius-sm, 6px);
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-dropdown-menu {
+  min-width: 225px;
+  right: 0;
+  left: auto;
+  z-index: 60;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .main-navbar {
@@ -236,3 +256,4 @@
         padding: 0.4rem;
     }
 }
+

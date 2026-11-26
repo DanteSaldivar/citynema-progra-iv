@@ -1,177 +1,319 @@
 .mapa-container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: var(--space-lg);
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 0.75rem var(--space-md, 1rem) 1rem;
 }
 
 .compra-header {
-    text-align: center;
-    margin-bottom: var(--space-xl);
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.header-top {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 0.4rem;
+}
+
+.header-top h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.precio-base-tag {
+  font-size: 0.88rem;
+  color: var(--text-muted);
 }
 
 .pantalla-cine {
-    height: 12px;
-    background: linear-gradient(to bottom, #ccc, transparent);
-    border-top: 4px solid var(--color-primary);
-    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-    margin-top: var(--space-sm);
+  height: 10px;
+  max-width: 820px;
+  margin: 0 auto;
+  background: linear-gradient(to bottom, #ccc, transparent);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+
+.pantalla-label {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  margin-top: 3px;
 }
 
 .leyenda {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-lg);
-    margin-bottom: var(--space-xl);
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: center;
+  gap: 1.1rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
 }
 
 .leyenda-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    font-size: var(--text-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.asiento-muestra {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px 6px 2px 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.alert-agotada {
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 0.75rem;
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(255, 74, 90, 0.14);
+  border: 1px solid var(--color-error, #ff4a5a);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.sala-viewport {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0 0.5rem;
+  margin-bottom: 0.85rem;
 }
 
 .sala-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: max-content;
+  min-width: 100%;
+  margin: 0 auto;
 }
 
 .fila {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
 }
 
 .fila-letra {
-    font-weight: bold;
-    width: 20px;
-    text-align: center;
-    color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+  width: 22px;
+  text-align: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .bloque-butacas {
-    display: flex;
-    gap: 4px;
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
-/* Configuración de anchos para simular el 4-20-4 de RN-01 */
+/* Anchos mínimos alineados a 4 - 20 - 4 butacas de 32px + 5px gap */
 .bloque-butacas.izq {
-    width: 15%;
-    justify-content: flex-end;
+  min-width: 143px;
+  justify-content: flex-end;
 }
 
 .bloque-butacas.cen {
-    width: 60%;
-    justify-content: center;
+  min-width: 735px;
+  justify-content: center;
 }
 
 .bloque-butacas.der {
-    width: 15%;
-    justify-content: flex-start;
+  min-width: 143px;
+  justify-content: flex-start;
 }
 
 .asiento {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px 6px 2px 2px;
-    border: none;
-    font-size: 10px;
-    font-weight: bold;
-    color: transparent;
-    /* Oculta número hasta hacer hover */
-    cursor: pointer;
-    transition: all 0.2s;
+  width: 32px;
+  height: 30px;
+  padding: 0;
+  border-radius: 6px 6px 2px 2px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .asiento:hover:not(:disabled) {
-    color: #fff;
-    transform: scale(1.1);
+  color: #fff;
+  transform: scale(1.12);
 }
 
-/* Cuando la butaca está esperando respuesta del servidor */
+.asiento:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 .asiento.procesando {
   opacity: 0.5;
-  pointer-events: none; /* Bloquea físicamente nuevos clics */
-  animation: pulse 1s infinite alternate;
+  pointer-events: none;
   cursor: wait;
 }
 
-@keyframes pulse {
-  from { transform: scale(1); }
-  to { transform: scale(0.9); }
-}
-
-/* Colores por tipo (RN-02 y RN-03) */
+/* Tipos de butaca diferenciados por forma + borde + ícono (sin pisar estados) */
 .estandar {
-    background-color: var(--seat-standard);
+  background-color: var(--seat-standard);
 }
 
 .vip {
-    background-color: var(--seat-vip);
-    border-bottom: 3px solid #ffca28;
+  background-color: var(--seat-vip);
+  border-bottom: 3px solid #ffca28;
+  color: #fff3c4;
 }
 
 .accesible {
-    background-color: var(--seat-accessible);
-    border-radius: 50%;
+  background-color: var(--seat-accessible);
+  border-radius: 50%;
+  border: 1.5px solid #93c5fd;
 }
 
-/* Forma distinta para silla de ruedas */
-
+/* Estados visuales diferenciados */
 .ocupado {
-    background-color: var(--seat-occupied) !important;
-    cursor: not-allowed;
-    opacity: 0.5;
+  background-color: var(--seat-occupied) !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .mio {
-    background-color: var(--seat-selected) !important;
-    color: var(--text-inverse);
-    box-shadow: 0 0 8px var(--color-primary);
+  background-color: var(--seat-selected) !important;
+  border-color: #fff !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px var(--color-primary);
 }
 
-.asiento.reservada {
-    background-color: var(--seat-reserved) !important;
-    cursor: not-allowed;
-    background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 5px,
-        rgba(0, 0, 0, 0.2) 5px,
-        rgba(0, 0, 0, 0.2) 10px
-    ) !important;
+.reservada {
+  background-color: var(--seat-reserved) !important;
+  color: #fff !important;
+  cursor: not-allowed;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.22) 4px,
+    rgba(0, 0, 0, 0.22) 8px
+  ) !important;
 }
+
+/* Footer simple y legible */
 .compra-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    bottom: 20px;
-    z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  bottom: 12px;
+  z-index: 10;
+  padding: 0.8rem 1.1rem;
+}
+
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resumen-linea {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.resumen-linea h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.butacas-lista {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.timer-pill {
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.subtotal-texto {
+  font-size: 0.95rem;
 }
 
 .alert-vip {
   color: var(--color-warning);
-  font-size: var(--text-xs);
+  font-size: 0.84rem;
   font-weight: 600;
-  background: rgba(255, 170, 0, 0.1);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  display: inline-block;
+  background: rgba(255, 170, 0, 0.12);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 6px);
   width: fit-content;
 }
 
+/* Mobile / 360 px: área táctil cómoda con scroll horizontal controlado */
 @media (max-width: 768px) {
-    .asiento {
-        width: 18px;
-        height: 18px;
-        font-size: 8px;
-    }
+  .mapa-container {
+    padding: 0.5rem 0.5rem 0.85rem;
+  }
 
-    .bloque-butacas {
-        gap: 2px;
-    }
+  .fila {
+    gap: 10px;
+  }
+
+  .bloque-butacas {
+    gap: 3px;
+  }
+
+  .bloque-butacas.izq {
+    min-width: 113px;
+  }
+
+  .bloque-butacas.cen {
+    min-width: 577px;
+  }
+
+  .bloque-butacas.der {
+    min-width: 113px;
+  }
+
+  .asiento {
+    width: 26px;
+    height: 25px;
+    font-size: 10px;
+  }
+
+  .compra-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    bottom: 8px;
+  }
+
+  .compra-footer .btn {
+    width: 100%;
+  }
 }

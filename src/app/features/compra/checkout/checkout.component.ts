@@ -1,44 +1,39 @@
-import { Component, computed, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { AuthService } from '../../../core/auth/auth.service';
-import { CarritoCandy, ComprasService } from '../compras.service';
-import { Router } from '@angular/router';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Butaca, Pelicula } from '../../../core/models/database.types';
-import { ReservasService } from '../reserva.service';
-import { FuncionesService } from '../../../core/services/funciones/funciones.service';
-import { CuentaService } from '../../cuenta/cuenta.service';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
+import { FuncionesService } from '../../../core/services/funciones.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { CandyCatalogoService } from '../../admin/admin-catalogo.service';
+import { CarritoService } from '../carrito.service';
+import { ComprasService } from '../compras.service';
 
 @Component({
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe, CurrencyPipe, RouterLink],
   selector: 'app-checkout',
   styleUrl: './checkout.component.css',
   templateUrl: './checkout.component.html',
 })
-export class CheckoutComponent implements OnInit, OnDestroy {
-
-  private auth = inject(AuthService);
-  private comprasService = inject(ComprasService);
-  private router = inject(Router);
-  private reservaService = inject(ReservasService);
-  private funcionesService = inject(FuncionesService);
-  private cuentaService = inject(CuentaService);
+export class CheckoutComponent implements OnInit {
+  readonly auth = inject(AuthService);
+  readonly carrito = inject(CarritoService);
+  private readonly comprasService = inject(ComprasService);
+  private readonly candyCatalogo = inject(CandyCatalogoService);
+  private readonly funcionesService = inject(FuncionesService);
+  private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
 
   emailInvitado = '';
-  productosCandy = signal<any[]>([]);
-  carritoCandy = signal<CarritoCandy[]>([]);
-
-  procesando = signal(false);
+  cargando = signal<boolean>(true);
+  procesando = signal<boolean>(false);
   mensajeError = signal<string | null>(null);
 
-  funcionId: string = '';
-  butacasIds: string[] = [];
-  butacasSeleccionadas = signal<Butaca[]>([]);
-  precioBase = signal<number>(0);
-  compraFinalizadaExitosamente = signal<boolean>(false);
   pelicula = signal<any | null>(null);
   funcion = signal<any | null>(null);
 
+  readonly resumenButacas = computed(() => this.carrito.resumenButacasPorTipo());
+  readonly desglose = computed(() => this.carrito.desgloseSubtotal());
 
   constructor() {
     const state = history.state as {
@@ -46,107 +41,48 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       butacasIds?: string[];
     };
 
-    if (state.funcionId && state.butacasIds) {
-      this.funcionId = state.funcionId;
-      this.butacasIds = state.butacasIds;
-    } else {
-      // No llegaron los datos necesarios
-      this.router.navigate(['/']);
+    if (state?.funcionId && state?.butacasIds?.length) {
+      this.carrito.establecerSeleccionButacas(state.funcionId, state.butacasIds);
     }
   }
 
-  resumenButacas = computed(() => {
-    const butacas = this.butacasSeleccionadas();
-    let vipCount = 0;
-    let standardCount = 0; 
+  async ngOnInit(): Promise<void> {
+    this.cargando.set(true);
 
-    const precioEstandar = this.funcion()?.precio_base; 
-    const precioVip = precioEstandar * 0.5;
+    // Rehidratar precios reales desde BD (soporta F5 y entrada directa desde mapa o desde /compra/candy)
+    const resCatalogo = await this.candyCatalogo.obtenerCatalogoActivo();
+    const validacion = await this.carrito.rehidratarYValidarHold(
+      resCatalogo.ok ? resCatalogo.data.productos : [],
+      resCatalogo.ok ? resCatalogo.data.combos : []
+    );
 
-    butacas.forEach(butaca => {
-
-      if (butaca.tipo === 'vip') {
-        vipCount++;
-      } else {
-        standardCount++;
-      }
-    });
-
-    return {
-      vip: { cantidad: vipCount, subtotal: vipCount * precioVip },
-      estandar: { cantidad: standardCount, subtotal: standardCount * precioEstandar }
-    };
-  });
-
-  @HostListener('window:beforeunload')
-  alCerrarPestana() {
-    if (!this.compraFinalizadaExitosamente) {
-      this.reservaService.limpiarMisReservas();
-    }
-  }
-
-  async ngOnInit() {
-    if (!this.funcionId || !this.butacasIds || this.butacasIds.length === 0) {
-      this.router.navigate(['/']);
+    if (!validacion.ok) {
+      this.toast.error(validacion.motivo);
+      this.cargando.set(false);
+      void this.router.navigate(['/catalogo']);
       return;
     }
-    this.cargarCandy();
-    await this.cargarDatosDeCompraReales();
-    this.pelicula.set(await this.funcionesService.getNombrePelicula(this.funcionId));
-    this.funcion.set(await this.funcionesService.getFuncion(this.funcionId));
-    
-  }
 
-  /**
-   * Obtiene de la base de datos el precio de la función y los detalles físicos
-   * de las butacas (para saber cuáles son VIP y calcular el total).
-   */
-  async cargarDatosDeCompraReales() {
-    this.procesando.set(true);
     try {
-      const datos = await this.comprasService.getDatosCheckout(this.funcionId, this.butacasIds);
-
-      this.precioBase.set(datos.precioBase);
-      this.butacasSeleccionadas.set(datos.butacas);
-    } catch (error: any) {
-      this.mensajeError.set(error.message || "Error al cargar los detalles de la compra.");
+      const fId = this.carrito.funcionId();
+      const [peli, func] = await Promise.all([
+        this.funcionesService.getNombrePelicula(fId),
+        this.funcionesService.getFuncion(fId),
+      ]);
+      this.pelicula.set(peli);
+      this.funcion.set(func);
+    } catch (error: unknown) {
+      this.mensajeError.set(
+        error instanceof Error ? error.message : 'Error al cargar los detalles de la función.'
+      );
     } finally {
-      this.procesando.set(false);
+      this.cargando.set(false);
     }
   }
 
-  async cargarCandy() {
-    const prods = await this.comprasService.getProductosCandy();
-    this.productosCandy.set(prods);
-  }
-
-  agregarCandy(prod: any) {
-    const actual = this.carritoCandy();
-    const existe = actual.find(c => c.productoId === prod.id);
-
-    if (existe) {
-      this.carritoCandy.set(actual.map(c =>
-        c.productoId === prod.id ? { ...c, cantidad: c.cantidad + 1 } : c
-      ));
-    } else {
-      this.carritoCandy.set([...actual, {
-        productoId: prod.id,
-        nombre: prod.nombre,
-        cantidad: 1,
-        precioUnitario: prod.precio
-      }]);
-    }
-  }
-
-  calcularTotal(): number {
-    const subtotalEntradas = this.comprasService.calcularSubtotal(this.precioBase(), this.butacasSeleccionadas());
-    const totalCandy = this.carritoCandy().reduce((acc, c) => acc + (c.cantidad * c.precioUnitario), 0);
-    return subtotalEntradas + totalCandy;
-  }
-
-  async pagar() {
-    if (!this.auth.estaAutenticado() && !this.emailInvitado) {
-      this.mensajeError.set("Por favor ingresá un email para enviarte las entradas.");
+  async pagar(): Promise<void> {
+    if (!this.auth.estaAutenticado() && !this.emailInvitado.trim()) {
+      this.mensajeError.set('Por favor ingresá un email para enviarte las entradas.');
       return;
     }
 
@@ -154,34 +90,21 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.mensajeError.set(null);
 
     try {
-
       const ordenId = await this.comprasService.confirmarCompra({
-        funcionId: this.funcionId,
-        butacas: this.butacasSeleccionadas(),
-        precioBase: this.precioBase(),
+        funcionId: this.carrito.funcionId(),
+        butacasIds: this.carrito.butacasIds(),
         emailInvitado: this.emailInvitado,
-        candy: this.carritoCandy(),
-        totalPagado: this.calcularTotal()
+        itemsCandy: this.carrito.itemsCandy(),
       });
 
-      // 2. Si todo sale bien (sin colisiones en la BD), redirigimos al PDF
-      this.compraFinalizadaExitosamente.set(true);
-      this.router.navigate(['/compra/exito', ordenId]);
-    } catch (e: any) {
-      this.mensajeError.set(e.message);
+      this.carrito.limpiarTodo();
+      await this.router.navigate(['/compra/exito', ordenId]);
+    } catch (e: unknown) {
+      this.mensajeError.set(
+        e instanceof Error ? e.message : 'No se pudo completar la compra.'
+      );
     } finally {
       this.procesando.set(false);
     }
   }
-
-  ngOnDestroy() {
-    const paginaAnterior = this.router.url.includes('compra/asientos');
-
-    if (!this.compraFinalizadaExitosamente() && !paginaAnterior) {
-      this.reservaService.limpiarMisReservas();
-    }
-  }
-
-
-
 }

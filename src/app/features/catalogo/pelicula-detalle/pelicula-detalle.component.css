@@ -251,6 +251,71 @@
   border-color: var(--color-primary);
 }
 
+.meta-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.aviso-clasificacion {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 193, 7, 0.14);
+  border: 1px solid rgba(255, 193, 7, 0.45);
+  color: var(--text-main);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.resenias-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.resenias-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.resenia-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.9rem;
+}
+
+.resenia-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.resenia-score {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.resenia-comentario {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  opacity: 0.9;
+}
+
+.btn-ver-mas {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
+.precio {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
 /* Responsive Design */
 @media (max-width: 900px) {
     .detalle-container {

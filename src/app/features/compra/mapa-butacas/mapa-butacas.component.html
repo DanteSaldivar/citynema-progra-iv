@@ -1,102 +1,193 @@
 <div class="mapa-container">
     @if (cargando()) {
-    <div class="loading-state">Cargando sala en tiempo real...</div>
+    <div class="loading-state">
+        <i class="fa-solid fa-film"></i> Cargando sala en tiempo real...
+    </div>
+    } @else if (mensajeError() && butacasFisicas().length === 0) {
+    <div class="empty-state" role="alert">
+        <p>{{ mensajeError() }}</p>
+        <a routerLink="/catalogo" class="btn btn-secondary">Volver a cartelera</a>
+    </div>
     } @else {
-
     <header class="compra-header">
-        <h2>{{pelicula.titulo}}</h2>
-        <p class="text-muted">Seleccioná tus butacas</p>
-        <div class="pantalla-cine"></div>
+        <div class="header-top">
+            <h2>{{ pelicula()?.titulo }}</h2>
+            <span class="precio-base-tag">
+                Entrada general: {{ precioBase() | currency:'ARS':'symbol-narrow':'1.0-0' }}
+            </span>
+        </div>
+        <div class="pantalla-cine" aria-hidden="true"></div>
+        <span class="pantalla-label">PANTALLA</span>
     </header>
 
-    <!-- Leyenda -->
-    <div class="leyenda">
+    <!-- Leyenda compacta diferenciada por forma, borde, ícono y color -->
+    <div class="leyenda" role="region" aria-label="Referencias de estado y tipo de butaca">
         <div class="leyenda-item">
-            <div class="asiento estandar"></div> Estándar
+            <span class="asiento-muestra estandar" aria-hidden="true"></span> Estándar
         </div>
         <div class="leyenda-item">
-            <div class="asiento vip"></div> VIP (+50%)
+            <span class="asiento-muestra vip" aria-hidden="true"><i class="fa-solid fa-star"></i></span> VIP (+{{
+            recargoVipPct() }}%)
         </div>
         <div class="leyenda-item">
-            <div class="asiento accesible"></div> Accesible
+            <span class="asiento-muestra accesible" aria-hidden="true"><i class="fa-solid fa-wheelchair"></i></span>
+            Accesible
         </div>
         <div class="leyenda-item">
-            <div class="asiento ocupado"></div> Ocupada
+            <span class="asiento-muestra mio" aria-hidden="true"><i class="fa-solid fa-check"></i></span> Seleccionada
         </div>
         <div class="leyenda-item">
-            <div class="asiento mio"></div> Seleccionada
+            <span class="asiento-muestra reservada" aria-hidden="true"><i class="fa-solid fa-hourglass-half"></i></span>
+            Retenida
+        </div>
+        <div class="leyenda-item">
+            <span class="asiento-muestra ocupado" aria-hidden="true"><i class="fa-solid fa-xmark"></i></span> Vendida
         </div>
     </div>
 
-    @if (mensajeError()) {
-    <div class="alert-error">{{ mensajeError() }}</div>
+    @if (funcionAgotada()) {
+    <!-- TODO (Fase posterior - RF-ESP-01): Habilitar botón "Anotarme en lista de espera" cuando la función esté agotada -->
+    <div class="alert-agotada" role="status">
+        <strong>Función agotada:</strong> no quedan butacas disponibles para este horario.
+    </div>
     }
 
-    <!-- Grilla de butacas (Trackeado por ID para onPush / rendimiento) -->
-    <div class="sala-grid">
-        @for (fila of filasAgrupadas(); track fila.letra) {
-        <div class="fila">
-            <div class="fila-letra">{{ fila.letra }}</div>
+    @if (mensajeError()) {
+    <div class="alert-error" role="alert">{{ mensajeError() }}</div>
+    }
 
-            <div class="bloque-butacas izq">
-                @for (b of fila.izquierda; track b.id) {
-                <button class="asiento {{b.tipo}}" [class.ocupado]="estadoButaca(b.id) === 'ocupada'"
-                    [class.reservada]="estadoButaca(b.id) === 'reservada'"
-                    [class.mio]="misSeleccionadas().includes(b.id)" [class.procesando]="procesando().includes(b.id)"
-                    [disabled]="estadoButaca(b.id) === 'ocupada' || estadoButaca(b.id) === 'reservada' || procesando().includes(b.id)"
-                    (click)="toggleButaca(b)">
-                    {{ b.numero }}
-                </button>
-                }
+    <!-- Grilla de butacas (20 filas A-T, 3 bloques 4-20-4 / 2-10-2 en J y K) -->
+    <div class="sala-viewport">
+        <div class="sala-grid" role="group" aria-label="Mapa de butacas de la sala">
+            @for (fila of filasAgrupadas(); track fila.letra) {
+            <div class="fila">
+                <div class="fila-letra" aria-hidden="true">{{ fila.letra }}</div>
+
+                <div class="bloque-butacas izq">
+                    @for (b of fila.izquierda; track b.id) {
+                    <button type="button" class="asiento {{ b.tipo }}"
+                        [class.ocupado]="estadoButaca(b.id) === 'ocupada'"
+                        [class.reservada]="estadoButaca(b.id) === 'reservada'"
+                        [class.mio]="misSeleccionadas().includes(b.id)" [class.procesando]="procesando().includes(b.id)"
+                        [attr.aria-label]="ariaLabelButaca(b)" [attr.aria-pressed]="misSeleccionadas().includes(b.id)"
+                        [disabled]="
+                    estadoButaca(b.id) === 'ocupada' ||
+                    estadoButaca(b.id) === 'reservada' ||
+                    procesando().includes(b.id)
+                  " (click)="toggleButaca(b)">
+                        @if (misSeleccionadas().includes(b.id)) {
+                        <i class="fa-solid fa-check"></i>
+                        } @else if (estadoButaca(b.id) === 'ocupada') {
+                        <i class="fa-solid fa-xmark"></i>
+                        } @else if (estadoButaca(b.id) === 'reservada') {
+                        <i class="fa-solid fa-hourglass-half"></i>
+                        } @else if (b.tipo === 'accesible') {
+                        <i class="fa-solid fa-wheelchair"></i>
+                        } @else if (b.tipo === 'vip') {
+                        <i class="fa-solid fa-star"></i>
+                        } @else {
+                        {{ b.numero }}
+                        }
+                    </button>
+                    }
+                </div>
+
+                <div class="bloque-butacas cen">
+                    @for (b of fila.centro; track b.id) {
+                    <button type="button" class="asiento {{ b.tipo }}"
+                        [class.ocupado]="estadoButaca(b.id) === 'ocupada'"
+                        [class.reservada]="estadoButaca(b.id) === 'reservada'"
+                        [class.mio]="misSeleccionadas().includes(b.id)" [class.procesando]="procesando().includes(b.id)"
+                        [attr.aria-label]="ariaLabelButaca(b)" [attr.aria-pressed]="misSeleccionadas().includes(b.id)"
+                        [disabled]="
+                    estadoButaca(b.id) === 'ocupada' ||
+                    estadoButaca(b.id) === 'reservada' ||
+                    procesando().includes(b.id)
+                  " (click)="toggleButaca(b)">
+                        @if (misSeleccionadas().includes(b.id)) {
+                        <i class="fa-solid fa-check"></i>
+                        } @else if (estadoButaca(b.id) === 'ocupada') {
+                        <i class="fa-solid fa-xmark"></i>
+                        } @else if (estadoButaca(b.id) === 'reservada') {
+                        <i class="fa-solid fa-hourglass-half"></i>
+                        } @else if (b.tipo === 'accesible') {
+                        <i class="fa-solid fa-wheelchair"></i>
+                        } @else if (b.tipo === 'vip') {
+                        <i class="fa-solid fa-star"></i>
+                        } @else {
+                        {{ b.numero }}
+                        }
+                    </button>
+                    }
+                </div>
+
+                <div class="bloque-butacas der">
+                    @for (b of fila.derecha; track b.id) {
+                    <button type="button" class="asiento {{ b.tipo }}"
+                        [class.ocupado]="estadoButaca(b.id) === 'ocupada'"
+                        [class.reservada]="estadoButaca(b.id) === 'reservada'"
+                        [class.mio]="misSeleccionadas().includes(b.id)" [class.procesando]="procesando().includes(b.id)"
+                        [attr.aria-label]="ariaLabelButaca(b)" [attr.aria-pressed]="misSeleccionadas().includes(b.id)"
+                        [disabled]="
+                    estadoButaca(b.id) === 'ocupada' ||
+                    estadoButaca(b.id) === 'reservada' ||
+                    procesando().includes(b.id)
+                  " (click)="toggleButaca(b)">
+                        @if (misSeleccionadas().includes(b.id)) {
+                        <i class="fa-solid fa-check"></i>
+                        } @else if (estadoButaca(b.id) === 'ocupada') {
+                        <i class="fa-solid fa-xmark"></i>
+                        } @else if (estadoButaca(b.id) === 'reservada') {
+                        <i class="fa-solid fa-hourglass-half"></i>
+                        } @else if (b.tipo === 'accesible') {
+                        <i class="fa-solid fa-wheelchair"></i>
+                        } @else if (b.tipo === 'vip') {
+                        <i class="fa-solid fa-star"></i>
+                        } @else {
+                        {{ b.numero }}
+                        }
+                    </button>
+                    }
+                </div>
+
+                <div class="fila-letra" aria-hidden="true">{{ fila.letra }}</div>
             </div>
-
-            <div class="bloque-butacas cen">
-                @for (b of fila.centro; track b.id) {
-                <button class="asiento {{b.tipo}}" [class.ocupado]="estadoButaca(b.id) === 'ocupada'"
-                    [class.reservada]="estadoButaca(b.id) === 'reservada'"
-                    [class.mio]="misSeleccionadas().includes(b.id)" [class.procesando]="procesando().includes(b.id)"
-                    [disabled]="estadoButaca(b.id) === 'ocupada' || estadoButaca(b.id) === 'reservada' || procesando().includes(b.id)"
-                    (click)="toggleButaca(b)">
-                    {{ b.numero }}
-                </button>
-                }
-            </div>
-
-            <div class="bloque-butacas der">
-                @for (b of fila.derecha; track b.id) {
-                <button class="asiento {{b.tipo}}" [class.ocupado]="estadoButaca(b.id) === 'ocupada'"
-                    [class.reservada]="estadoButaca(b.id) === 'reservada'"
-                    [class.mio]="misSeleccionadas().includes(b.id)" [class.procesando]="procesando().includes(b.id)"
-                    [disabled]="estadoButaca(b.id) === 'ocupada' || estadoButaca(b.id) === 'reservada' || procesando().includes(b.id)"
-                    (click)="toggleButaca(b)">
-                    {{ b.numero }}
-                </button>
-                }
-            </div>
-
-            <div class="fila-letra">{{ fila.letra }}</div>
+            }
         </div>
-        }
     </div>
 
-    @if (misSeleccionadas().length > 0){
-
-    <footer class="compra-footer card">
+    <!-- Footer simple, claro y compacto (estilo anterior + timer + aviso VIP con precio) -->
+    @if (misSeleccionadas().length > 0) {
+    <footer class="compra-footer card" role="region" aria-label="Resumen de selección">
         <div class="resumen">
-            <h3>Seleccionadas: {{ misSeleccionadas().length }}</h3>
-            <span> subtotal: {{ precioEntradas() | currency }}</span>
-            <!-- El desglose de precio va en el checkout, acá solo mostramos cantidad -->
+            <div class="resumen-linea">
+                <h3>
+                    Seleccionadas: {{ misSeleccionadas().length }}
+                    <span class="butacas-lista">({{ etiquetasSeleccionadas() }})</span>
+                </h3>
+                <span class="timer-pill" aria-live="polite">
+                    <i class="fa-solid fa-clock"></i> {{ tiempoRestanteFormateado() }}
+                </span>
+            </div>
+
+            <span class="subtotal-texto">
+                Subtotal: <strong>{{ precioEntradas() | currency:'ARS':'symbol-narrow':'1.0-0' }}</strong>
+            </span>
+
+            @if (tieneVIP()) {
+            <div class="alert-vip" role="note">
+                <i class="fa-solid fa-star"></i>
+                Estás eligiendo butaca VIP ({{ precioUnitarioVip() | currency:'ARS':'symbol-narrow':'1.0-0' }} c/u,
+                +{{ recargoVipPct() }}%).
+            </div>
+            }
         </div>
-        @if (tieneVIP()) {
-        <div class="alert-vip">
-            ⭐ Estás incluyendo butacas VIP (Filas R, S o T) de mayor valor.
-        </div>
-        }
-        <button class="btn btn-primary" [disabled]="misSeleccionadas().length === 0" (click)="continuarCompra()">
+
+        <button type="button" class="btn btn-primary" [disabled]="misSeleccionadas().length === 0"
+            (click)="continuarCompra()">
             Continuar al Pago
         </button>
     </footer>
     }
     }
-
 </div>

@@ -1,66 +1,75 @@
-import { CommonModule } from '@angular/common';
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, OnDestroy, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CatalogoService } from '../../catalogo.service';
+import { PeliculaVentas } from '../../catalogo.service';
+import { ResenasService } from '../../../reseñas/resenas.service';
 
 @Component({
-  imports: [CommonModule, RouterLink],
+  imports: [RouterLink],
   selector: 'app-pelicula-carrusel',
   styleUrl: './pelicula-carrusel.component.css',
   templateUrl: './pelicula-carrusel.component.html',
 })
-export class PeliculaCarruselComponent implements OnInit, OnDestroy {
+export class PeliculaCarruselComponent implements OnDestroy {
+  private readonly resenasService = inject(ResenasService);
 
+  readonly peliculas = input<PeliculaVentas[]>([]);
+  readonly currentIndex = signal<number>(0);
+  readonly resenas = signal<{ promedio: number; total: number }>({ promedio: 0, total: 0 });
 
-   private catalogoService = inject(CatalogoService);
-   resenas = signal<{ promedio: number, total: number }>({ promedio: 0, total: 0 });
-
-  peliculas = input<any[]>([]);
-
-  currentIndex = signal<number>(0);
-
-  // Computed properties
-  peliculaActual = computed(() => {
+  readonly peliculaActual = computed<PeliculaVentas | null>(() => {
     const items = this.peliculas();
-    return items.length > 0 ? items[this.currentIndex()] : null;
+    if (!items.length) return null;
+    const idx = this.currentIndex() % items.length;
+    return items[idx] ?? null;
   });
 
-  private slideInterval: any;
+  readonly generosTexto = computed(() => {
+    const actual = this.peliculaActual();
+    return actual?.generos?.map((g) => g.nombre).join(' • ') ?? '';
+  });
 
-  async ngOnInit() {
-    if (this.peliculas().length > 0) {
-      this.iniciarAutoplay();
+  private slideInterval: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    effect(() => {
+      const lista = this.peliculas();
+      this.limpiarIntervalo();
+      if (lista.length > 1) {
+        this.slideInterval = setInterval(() => {
+          this.currentIndex.update((i) => (i + 1) % lista.length);
+        }, 6000);
+      }
+    });
+
+    effect(() => {
+      const actual = this.peliculaActual();
+      if (!actual) {
+        this.resenas.set({ promedio: 0, total: 0 });
+        return;
+      }
+      void this.cargarResumenResenas(actual.id);
+    });
+  }
+
+  private async cargarResumenResenas(peliculaId: string): Promise<void> {
+    const res = await this.resenasService.obtenerResumen(peliculaId);
+    if (res.ok && this.peliculaActual()?.id === peliculaId) {
+      this.resenas.set(res.data);
     }
-    this.resenas.set( await this.catalogoService.getResumenResenas(this.peliculaActual().id));
   }
 
-  ngOnDestroy() {
-    this.limpiarIntervalo();
-  }
-
-  setSlide(index: number) {
+  setSlide(index: number): void {
     this.currentIndex.set(index);
+  }
+
+  ngOnDestroy(): void {
     this.limpiarIntervalo();
-    this.iniciarAutoplay();
   }
 
-  private siguienteSlide() {
-    const total = this.peliculas().length;
-    if (total > 0) {
-      this.currentIndex.update(i => (i + 1) % total);
-    }
-  }
-
-  private iniciarAutoplay() {
-    this.slideInterval = setInterval(() => {
-      this.siguienteSlide();
-    }, 6000);
-  }
-
-  private limpiarIntervalo() {
+  private limpiarIntervalo(): void {
     if (this.slideInterval) {
       clearInterval(this.slideInterval);
+      this.slideInterval = null;
     }
   }
-
 }

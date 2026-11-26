@@ -129,3 +129,46 @@ input:focus {
 .auth-switch:hover {
   text-decoration: underline;
 }
+
+.quick-access {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--color-secondary, #2d2d44);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quick-access-label {
+  font-size: 0.8rem;
+  color: var(--text-muted, #a0a0b8);
+  text-align: center;
+}
+
+.quick-access-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.btn-quick {
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--color-secondary, #2d2d44);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main, #f4f4f8);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-quick:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: rgba(138, 82, 229, 0.14);
+}
+
+.btn-quick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

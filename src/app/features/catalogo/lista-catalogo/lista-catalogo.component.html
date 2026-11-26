@@ -1,12 +1,11 @@
 <div class="catalogo-container">
-
-    <!-- Panel de Filtros -->
     <aside class="filtros-panel card">
         <h3 class="filtros-title">Buscar Película</h3>
 
         <div class="form-group">
-            <input type="search" class="input-control" placeholder="Título o sinopsis..." [value]="terminoBusqueda()"
-                (input)="terminoBusqueda.set($event.target.value)">
+            <input type="search" class="input-control" placeholder="Título o sinopsis..."
+                aria-label="Buscar por título o sinopsis" [value]="terminoBusqueda()"
+                (input)="terminoBusqueda.set($any($event.target).value)" />
         </div>
 
         <h4 class="filtros-subtitle">Filtrar por Género</h4>
@@ -14,15 +13,20 @@
             @for (genero of generos(); track genero.id) {
             <label class="checkbox-label">
                 <input type="checkbox" [checked]="seleccionados().includes(genero.id)"
-                    (change)="toggleGenero(genero.id)">
+                    (change)="toggleGenero(genero.id)" />
                 <span class="custom-checkbox"></span>
                 {{ genero.nombre }}
             </label>
             }
         </div>
+
+        @if (terminoBusqueda() || seleccionados().length > 0) {
+        <button type="button" class="btn btn-secondary w-100 mt-sm" (click)="limpiarFiltros()">
+            Limpiar filtros
+        </button>
+        }
     </aside>
 
-    <!-- Grilla de Resultados -->
     <main class="resultados-panel">
         <div class="resultados-header">
             <h2>Cartelera</h2>
@@ -35,33 +39,52 @@
             <div class="loading-skeleton"></div>
             <div class="loading-skeleton"></div>
         </div>
+        } @else if (errorCarga()) {
+        <div class="empty-state card" role="alert">
+            <h3>No se pudo cargar la cartelera</h3>
+            <p class="text-muted">{{ errorCarga() }}</p>
+        </div>
         } @else if (peliculas().length === 0) {
         <div class="empty-state card">
             <h3>No encontramos resultados</h3>
             <p class="text-muted">Intentá con otros términos o quitá algunos filtros de género.</p>
-            <button class="btn btn-secondary mt-sm" (click)="limpiarFiltros()">Limpiar filtros</button>
+            <button type="button" class="btn btn-secondary mt-sm" (click)="limpiarFiltros()">
+                Limpiar filtros
+            </button>
         </div>
         } @else {
         <div class="movies-grid">
             @for (pelicula of peliculas(); track pelicula.id) {
             <div class="card movie-card">
                 <img [src]="pelicula.poster_url || 'assets/placeholder.jpg'" [alt]="pelicula.titulo"
-                    class="movie-poster">
+                    class="movie-poster" />
                 <div class="movie-info">
                     <h3>{{ pelicula.titulo }}</h3>
+
                     <div class="movie-meta">
-                        <span class="badge clasificacion">{{ pelicula.clasificacion | uppercase }}</span>
+                        <span class="badge clasificacion">
+                            {{ etiquetaClasificacion(pelicula.clasificacion) }}
+                        </span>
                         <span class="duracion">{{ pelicula.duracion_min }} min</span>
                     </div>
+
+                    @if (pelicula.generos.length > 0) {
+                    <div class="movie-meta" style="flex-wrap: wrap; gap: 0.35rem;">
+                        @for (g of pelicula.generos; track g.id) {
+                        <span class="badge">{{ g.nombre }}</span>
+                        }
+                    </div>
+                    }
+
                     <p class="sinopsis-corta">{{ pelicula.sinopsis }}</p>
-                    <button class="btn btn-primary w-100 mt-sm" [routerLink]="['/pelicula', pelicula.id]">
+
+                    <a class="btn btn-primary w-100 mt-sm" [routerLink]="['/pelicula', pelicula.id]">
                         Ver Funciones
-                    </button>
+                    </a>
                 </div>
             </div>
             }
         </div>
         }
     </main>
-
 </div>

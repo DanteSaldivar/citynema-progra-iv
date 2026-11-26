@@ -1,8 +1,7 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AuthService } from '../../../core/auth/auth.service';
 import { Router } from '@angular/router';
-
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   imports: [ReactiveFormsModule],
@@ -20,10 +19,22 @@ export class LoginComponent {
   solicitarRegistro = output<void>();
   loginExitoso = output<void>();
 
+  readonly accesosRapidos = [
+    { etiqueta: 'Admin', email: 'admin@cine.test', password: 'Admin123!' },
+    { etiqueta: 'Empleado', email: 'empleado@cine.test', password: 'Empleado123!' },
+    { etiqueta: 'Cliente', email: 'cliente@cine.test', password: 'Cliente123!' },
+  ] as const;
+
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['',[ Validators.required, Validators.minLength(8)]]
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
+
+  accesoRapido(email: string, password: string): void {
+    if (this.cargando()) return;
+    this.form.patchValue({ email, password });
+    void this.onSubmit();
+  }
 
   async onSubmit() {
     if (this.form.invalid || this.cargando()) {
@@ -40,14 +51,14 @@ export class LoginComponent {
 
       // Redirección inteligente por rol (RF-AUT-03)
       if (perfil.rol === 'admin') {
-        this.router.navigate(['/admin']);
+        void this.router.navigate(['/admin']);
       } else if (perfil.rol === 'empleado') {
-        this.router.navigate(['/staff']);
+        void this.router.navigate(['/staff']);
       } else {
-        this.router.navigate(['/']);
+        void this.router.navigate(['/']);
       }
       this.loginExitoso.emit();
-    } catch (err: any) {
+    } catch {
       this.mensajeError.set('Error al iniciar sesión.');
     } finally {
       this.cargando.set(false);

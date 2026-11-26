@@ -1,0 +1,87 @@
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1200;
+}
+
+.modal-box {
+    width: 100%;
+    max-width: 440px;
+    background: var(--surface-card, #18181f);
+    color: var(--text-primary, #f4f4f6);
+    border: 1px solid var(--border-subtle, #2d2d3a);
+    border-radius: var(--radius-lg, 12px);
+    padding: 1.5rem;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.modal-title {
+    margin: 0 0 0.75rem;
+    font-size: 1.15rem;
+}
+
+.modal-body {
+    margin: 0 0 1.25rem;
+    color: var(--text-secondary, #b4b4c0);
+    line-height: 1.45;
+}
+
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.modal-field input,
+.modal-field textarea,
+.modal-field select {
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid var(--border-subtle, #2d2d3a);
+    background: var(--surface-input, #101015);
+    color: inherit;
+    font: inherit;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+
+.btn-pri,
+.btn-sec,
+.btn-danger {
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-md, 8px);
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-pri {
+    background: var(--color-primary, #e50914);
+    color: #fff;
+}
+
+.btn-danger {
+    background: var(--color-danger, #dc2626);
+    color: #fff;
+}
+
+.btn-sec {
+    background: var(--surface-elevated, #262632);
+    color: var(--text-primary, #f4f4f6);
+}

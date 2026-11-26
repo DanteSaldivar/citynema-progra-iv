@@ -1,110 +1,281 @@
-<div class="admin-container">
-    <div class="page-header">
-        <h2>Programación de Funciones</h2>
-        <p class="text-muted"> El sistema asignará la sala automáticamente evitando superposiciones y respetando los 30
-            minutos de limpieza. </p>
-    </div>
+<section class="admin-funciones-page">
+    <header class="page-header">
+        <div>
+            <h2>Programación de Funciones</h2>
+            <p class="text-muted">
+                Asignación automática de salas respetando el margen de limpieza ({{ margenMin() }} min).
+            </p>
+        </div>
 
-    <div class="card form-card">
-        <form (ngSubmit)="crearFuncion()" #f="ngForm">
+        <div class="modo-tabs" role="tablist">
+            <button type="button" class="tab-btn" [class.activo]="modoProgramacion() === 'unica'"
+                (click)="modoProgramacion.set('unica')">
+                Función única
+            </button>
+            <button type="button" class="tab-btn" [class.activo]="modoProgramacion() === 'recurrente'"
+                (click)="modoProgramacion.set('recurrente')">
+                Programación recurrente (L-D)
+            </button>
+        </div>
+    </header>
 
-            <div class="form-header">
-                <div>
-                    <h3>Programar nueva función</h3>
-                    <span class="text-muted">
-                        Completá los datos de la función.
-                    </span>
+    <!-- Formulario de Programación -->
+    <div class="card-programacion">
+        <div class="fila-superior">
+            <div class="campo campo-pelicula">
+                <label for="sel-pelicula">Película</label>
+                <div class="pelicula-select-row">
+                    <select id="sel-pelicula" class="input-ctrl" [ngModel]="peliculaId()"
+                        (ngModelChange)="onPeliculaChange($event)" [disabled]="guardando()">
+                        <option value="" disabled>-- Seleccioná una película --</option>
+                        @for (p of peliculas(); track p.id) {
+                        <option [value]="p.id">
+                            {{ p.titulo }} ({{ p.duracion_min }} min · Estreno: {{ formatearEstreno(p.fecha_estreno) }})
+                        </option>
+                        }
+                    </select>
+                    <button type="button" class="btn-sec" (click)="modalAltaPelicula.set(true)"
+                        [disabled]="guardando()">
+                        + Película
+                    </button>
                 </div>
-
-                <button type="button" class="btn btn-secondary" (click)="abrirAltaPelicula()">
-                    + Agregar película
-                </button>
             </div>
 
-            <div class="form-divider"></div>
-
-            <div class="form-group">
-                <label>Película</label>
-
-                <select class="input-control" [(ngModel)]="formulario.peliculaId" name="peliculaId" required>
-                    <option value="">Seleccione una película...</option>
-
-                    @for (p of peliculas(); track p.id) {
-                    <option [value]="p.id">
-                        {{ p.titulo }} ({{ p.duracion_min }} min)
-                    </option>
+            <div class="campo">
+                <label for="sel-formato">Formato</label>
+                <select id="sel-formato" class="input-ctrl" [ngModel]="formato()" (ngModelChange)="formato.set($event)"
+                    [disabled]="guardando()">
+                    @for (f of formatosOpciones; track f.valor) {
+                    <option [value]="f.valor">{{ f.etiqueta }}</option>
                     }
                 </select>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Fecha y Hora de Inicio</label>
+            <div class="campo">
+                <label for="sel-idioma">Idioma</label>
+                <select id="sel-idioma" class="input-ctrl" [ngModel]="idioma()" (ngModelChange)="idioma.set($event)"
+                    [disabled]="guardando()">
+                    @for (idOp of idiomasOpciones; track idOp.valor) {
+                    <option [value]="idOp.valor">{{ idOp.etiqueta }}</option>
+                    }
+                </select>
+            </div>
 
-                    <app-fecha-hora-select [fechaMinima]="fechaMinima" [mostrarHora]="true"
-                        (valorCambio)="onFechaHoraCambio($event)" />
-                </div>
+            <div class="campo campo-precio">
+                <label for="inp-precio">Precio base ($)</label>
+                <input id="inp-precio" type="number" class="input-ctrl" [ngModel]="precioBase()"
+                    (ngModelChange)="precioBase.set(+$event)" min="1" step="100" [disabled]="guardando()" />
+            </div>
+        </div>
 
-                <div class="form-group price-group">
-                    <label>Precio Base ($)</label>
+        @if (modoProgramacion() === 'unica') {
+        <div class="fila-unica">
+            <div class="campo">
+                <label>Fecha y hora de inicio (Argentina)</label>
+                <app-fecha-hora-select [mostrarHora]="true" [fechaMinima]="fechaMinimaUnica()"
+                    [valorInicial]="fechaHoraUnica()" (valorCambio)="fechaHoraUnica.set($event)" />
+            </div>
 
-                    <input type="number" class="input-control" [(ngModel)]="formulario.precioBase" name="precioBase"
-                        required min="1000">
+            <button type="button" class="btn-pri" [disabled]="guardando() || !peliculaId()"
+                (click)="crearFuncionUnica()">
+                {{ guardando() ? 'Asignando sala...' : 'Programar función' }}
+            </button>
+        </div>
+        } @else {
+        <!-- Modo Recurrente L-D -->
+        <div class="fila-recurrente">
+            <div class="campo">
+                <label for="rec-desde">Desde</label>
+                <input id="rec-desde" type="date" class="input-ctrl" [ngModel]="recDesde()"
+                    (ngModelChange)="onRecParamChange('desde', $event)" [disabled]="guardando()" />
+            </div>
+
+            <div class="campo">
+                <label for="rec-hasta">Hasta</label>
+                <input id="rec-hasta" type="date" class="input-ctrl" [ngModel]="recHasta()"
+                    (ngModelChange)="onRecParamChange('hasta', $event)" [disabled]="guardando()" />
+            </div>
+
+            <div class="campo">
+                <label for="rec-hora">Hora (AR)</label>
+                <input id="rec-hora" type="time" class="input-ctrl" [ngModel]="recHora()"
+                    (ngModelChange)="onRecParamChange('hora', $event)" [disabled]="guardando()" />
+            </div>
+
+            <div class="campo">
+                <label>Días de la semana</label>
+                <div class="dias-chips">
+                    @for (d of diasSemanaOpciones; track d.valor) {
+                    <button type="button" class="dia-chip" [class.activo]="recDias().includes(d.valor)"
+                        (click)="toggleDiaSemana(d.valor)" [disabled]="guardando()">
+                        {{ d.corto }}
+                    </button>
+                    }
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Formato</label>
+            <div class="rec-acciones">
+                <button type="button" class="btn-sec" [disabled]="guardando() || previsualizando() || !peliculaId()"
+                    (click)="generarVistaPreviaRecurrente()">
+                    {{ previsualizando() ? 'Calculando...' : 'Vista previa de fechas' }}
+                </button>
 
-                    <select class="input-control" [(ngModel)]="formulario.formato" name="formato" required>
-                        <option value="2D">2D</option>
-                        <option value="3D">3D</option>
-                        <option value="4D">4D</option>
-                        <option value="5D">5D</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Idioma</label>
-
-                    <select class="input-control" [(ngModel)]="formulario.idioma" name="idioma" required>
-                        <option value="Castellano">Castellano</option>
-                        <option value="Subtitulada">Subtitulada</option>
-                    </select>
-                </div>
-            </div>
-
-            @if (mensajeError()) {
-            <div class="alert-error mt-sm">
-                {{ mensajeError() }}
-            </div>
-            }
-
-            @if (resultadoExito()) {
-            <div class="alert-success mt-sm">
-                ✅ ¡Función programada con éxito!<br>
-                El sistema ha asignado automáticamente la
-                <strong>{{ resultadoExito() }}</strong>.
-            </div>
-            }
-
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary" [disabled]="procesando() || f.invalid">
-                    {{ procesando()
-                    ? 'Buscando sala disponible...'
-                    : 'Programar Función'
+                @if (previewRecurrente().length > 0 && cantidadDisponiblesPreview() > 0) {
+                <button type="button" class="btn-pri" [disabled]="guardando()" (click)="confirmarRecurrente()">
+                    {{
+                    guardando()
+                    ? 'Creando funciones...'
+                    : 'Crear ' + cantidadDisponiblesPreview() + ' función(es)'
                     }}
                 </button>
+                }
+            </div>
+        </div>
+
+        @if (previewRecurrente().length > 0) {
+        <div class="preview-lote-box">
+            <div class="preview-lote-resumen">
+                <span class="badge-ok">{{ cantidadDisponiblesPreview() }} disponible(s)</span>
+                @if (cantidadOmitidasPreview() > 0) {
+                <span class="badge-off">{{ cantidadOmitidasPreview() }} sin disponibilidad</span>
+                }
             </div>
 
-        </form>
+            <div class="preview-chips-grid">
+                @for (item of previewRecurrente(); track item.fechaYMD) {
+                <div class="preview-fecha-card" [class.ok]="item.disponible" [class.no]="!item.disponible">
+                    <strong>{{ formatearEstreno(item.fechaYMD) }} · {{ recHora() }} hs</strong>
+                    @if (item.disponible && item.salaAsignada) {
+                    <small>{{ item.salaAsignada.nombre }}</small>
+                    } @else {
+                    <small>{{ item.motivoNoDisponible }}</small>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+        }
+        }
     </div>
 
-</div>
+    <!-- Listado de Funciones Programadas -->
+    <div class="listado-header">
+        <h3>Funciones registradas</h3>
 
-@if (mostrarAltaPelicula()) {
-<app-modal [titulo]="'Alta de película'" [clase]="'modal-pelicula'" (cerrar)="cerrarAltaPelicula()">
-    <app-alta-pelicula (cancelar)="cerrarAltaPelicula()" (peliculaCreada)="alCrearPelicula()" />
+        <div class="filtros-bar">
+            <select class="input-ctrl" [ngModel]="filtroPeliculaId()"
+                (ngModelChange)="onFiltroChange('pelicula', $event)">
+                <option value="">Todas las películas</option>
+                @for (p of todasPeliculas(); track p.id) {
+                <option [value]="p.id">
+                    {{ p.titulo }}{{ p.activa ? '' : ' (Inactiva)' }}
+                </option>
+                }
+            </select>
+
+            <select class="input-ctrl" [ngModel]="filtroSalaId()" (ngModelChange)="onFiltroChange('sala', $event)">
+                <option value="">Todas las salas</option>
+                @for (s of salas(); track s.id) {
+                <option [value]="s.id">{{ s.nombre }}</option>
+                }
+            </select>
+
+            <select class="input-ctrl" [ngModel]="filtroEstado()" (ngModelChange)="onFiltroChange('estado', $event)">
+                <option value="todos">Todos los estados</option>
+                @for (est of estadosFuncionOpciones; track est.valor) {
+                <option [value]="est.valor">{{ est.etiqueta }}</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (cargandoLista()) {
+    <div class="estado-box">Cargando funciones...</div>
+    } @else if (funciones().length === 0) {
+    <div class="estado-box">No hay funciones que coincidan con los filtros.</div>
+    } @else {
+    <div class="tabla-wrap">
+        <table class="tabla-admin">
+            <thead>
+                <tr>
+                    <th>Película</th>
+                    <th>Sala</th>
+                    <th>Inicio (AR)</th>
+                    <th>Formato / Idioma</th>
+                    <th>Precio base</th>
+                    <th>Estado</th>
+                    <th class="th-acciones">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (f of funciones(); track f.id) {
+                <tr [class.fila-cancelada]="f.estado === estadosFuncion.CANCELADA">
+                    <td><strong>{{ f.pelicula_titulo }}</strong></td>
+                    <td class="nowrap">{{ f.sala_nombre }}</td>
+                    <td class="nowrap">{{ formatearInicio(f.inicio) }}</td>
+                    <td class="nowrap">{{ f.formato }} · {{ f.idioma }}</td>
+                    <td class="nowrap">
+                        @if (editandoPrecioId() === f.id) {
+                        <div class="precio-edit-inline">
+                            <input type="number" class="input-precio-sm" [ngModel]="precioEditValor()"
+                                (ngModelChange)="precioEditValor.set(+$event)" min="1" step="100" />
+                            <button type="button" class="btn-sm btn-ok" (click)="guardarPrecio(f)">
+                                OK
+                            </button>
+                            <button type="button" class="btn-sm" (click)="editandoPrecioId.set(null)">
+                                ✕
+                            </button>
+                        </div>
+                        } @else {
+                        <strong>${{ f.precio_base }}</strong>
+                        }
+                    </td>
+                    <td class="nowrap">
+                        <span [class]="'badge-est-' + f.estado">
+                            {{ etiquetaEstado(f.estado) }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="celda-acciones">
+                            @if (f.estado === estadosFuncion.PROGRAMADA) {
+                            <button type="button" class="btn-sm" (click)="iniciarEdicionPrecio(f)">
+                                Editar precio
+                            </button>
+                            <button type="button" class="btn-sm btn-warn" (click)="cancelarFuncion(f)">
+                                Cancelar
+                            </button>
+                            } @else {
+                            <span class="text-muted">—</span>
+                            }
+                        </div>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="paginacion-bar">
+        <span class="text-muted">
+            Mostrando {{ funciones().length }} de {{ totalFunciones() }} funciones
+        </span>
+        <div class="pag-btns">
+            <button type="button" class="btn-sm" [disabled]="pagina() <= 1" (click)="cambiarPagina(pagina() - 1)">
+                Anterior
+            </button>
+            <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
+            <button type="button" class="btn-sm" [disabled]="pagina() >= totalPaginas()"
+                (click)="cambiarPagina(pagina() + 1)">
+                Siguiente
+            </button>
+        </div>
+    </div>
+    }
+</section>
+
+<!-- Modal Alta rápida de Película -->
+@if (modalAltaPelicula()) {
+<app-modal [titulo]="'Nueva Película'" [clase]="'modal-pelicula'" (cerrar)="modalAltaPelicula.set(false)">
+    <app-alta-pelicula (cancelar)="modalAltaPelicula.set(false)" (peliculaCreada)="onPeliculaCreadaDesdeModal()" />
 </app-modal>
 }

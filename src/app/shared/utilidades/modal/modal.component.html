@@ -1,11 +1,10 @@
-<div class="modal-overlay" (click)="cerrar.emit()">
+<div class="modal-overlay">
   <section
     class="modal-content"
-    [class] = "clase()"
+    [class]="clase()"
     role="dialog"
     aria-modal="true"
-    [attr.aria-label]="titulo()"
-    (click)="$event.stopPropagation()">
+    [attr.aria-label]="titulo()">
 
     <button
       class="modal-close"

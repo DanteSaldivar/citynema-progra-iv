@@ -1,74 +1,81 @@
 <main class="home-container">
+    @if (errorGeneral()) {
+    <div class="alert-error" role="alert">{{ errorGeneral() }}</div>
+    }
 
-    <!-- ==========================================================================
-       SECCIÓN 1: TOP 3 MÁS VENDIDAS
-       ========================================================================== -->
+    <!-- 1. TOP 3 MÁS VENDIDAS (completado con destacadas si hay < 3 ventas) -->
     <section class="section-block top-ventas-section">
-
         @if (cargandoTop()) {
         <div class="skeleton-loader hero-skeleton"></div>
-        } @else if((top3().length > 0)) {
-        <!-- 1. Hero Carousel (Top 3) -->
-
-        <app-pelicula-carrusel [peliculas]="top3()"></app-pelicula-carrusel>
+        } @else if (top3().length > 0) {
+        <app-pelicula-carrusel [peliculas]="top3()" />
         }
     </section>
 
-    <!-- ==========================================================================
-       SECCIÓN 2: PELÍCULAS DESTACADAS (Slider Horizontal)
-       ========================================================================== -->
+    <!-- 2. PELÍCULAS DESTACADAS -->
     <section class="section-block slider-section">
-
         <header class="section-header">
             <div>
-                <h2 class="section-title">
-                    Películas destacadas
-                </h2>
-
-                <p class="section-subtitle">
-                    Selección especial de la semana
-                </p>
+                <h2 class="section-title">Películas destacadas</h2>
+                <p class="section-subtitle">Selección especial de la semana</p>
             </div>
+            <a routerLink="/catalogo" class="btn btn-secondary">Ver cartelera completa</a>
         </header>
 
-        @if(cargandoDestacadas()){
+        @if (cargandoDestacadas()) {
         <div class="skeleton-loader hero-skeleton"></div>
+        } @else if (destacadas().length === 0) {
+        <p class="text-muted">No hay películas destacadas por el momento.</p>
         } @else {
         <app-slider>
             @for (pelicula of destacadas(); track pelicula.id) {
-            <app-pelicula-card [pelicula]="pelicula">
-            </app-pelicula-card>
+            <app-pelicula-card [pelicula]="pelicula" />
             }
         </app-slider>
         }
     </section>
 
-    <!-- ==========================================================================
-       SECCIÓN 3: PRÓXIMAMENTE (Slider Horizontal)
-       ========================================================================== -->
+    <!-- 3. EN CARTELERA -->
     <section class="section-block slider-section">
-            <header class="section-header">
-                <div>
-                    <h2 class="section-title">
-                        🎬 Próximamente
-                    </h2>
+        <header class="section-header">
+            <div>
+                <h2 class="section-title">En cartelera</h2>
+                <p class="section-subtitle">Todas las funciones disponibles esta semana</p>
+            </div>
+        </header>
 
-                    <p class="section-subtitle">
-                        Próximos estrenos en cartelera
-                    </p>
-                </div>
-            </header>
-
-            @if(cargandoProximamente()){
-                <div class="skeleton-loader hero-skeleton"></div>
-            } @else {
-                <app-slider>
-                    @for (pelicula of proximamente(); track pelicula.id) {
-                    <app-pelicula-card [pelicula]="pelicula">
-                    </app-pelicula-card>
-                    }
-                </app-slider>
+        @if (cargandoCartelera()) {
+        <div class="skeleton-loader hero-skeleton"></div>
+        } @else if (restoEnCartelera().length === 0) {
+        <p class="text-muted">No hay películas en cartelera actualmente.</p>
+        } @else {
+        <app-slider>
+            @for (pelicula of restoEnCartelera(); track pelicula.id) {
+            <app-pelicula-card [pelicula]="pelicula" />
             }
+        </app-slider>
+        }
     </section>
 
+    <!-- 4. PRÓXIMAMENTE -->
+    @if (cargandoProximamente() || proximamente().length > 0) {
+    <section class="section-block slider-section">
+        <header class="section-header">
+            <div>
+                <h2 class="section-title">Próximamente</h2>
+                <p class="section-subtitle">Próximos estrenos en cartelera</p>
+            </div>
+        </header>
+
+        @if (cargandoProximamente()) {
+        <div class="skeleton-loader hero-skeleton"></div>
+        } @else {
+        <app-slider>
+            @for (pelicula of proximamente(); track pelicula.id) {
+            <app-pelicula-card [pelicula]="pelicula" />
+            }
+        </app-slider>
+        }
+    </section>
+    }
 </main>

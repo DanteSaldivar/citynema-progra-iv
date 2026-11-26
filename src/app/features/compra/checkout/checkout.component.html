@@ -1,222 +1,168 @@
 <div class="checkout-container">
-
+    @if (cargando()) {
+    <div class="loading-state">Preparando resumen de pago...</div>
+    } @else {
     <!-- =====================================================
          COLUMNA 1: PELÍCULA + BUTACAS
          ===================================================== -->
     <div class="main-column">
-
         <div class="card funcion-summary-card">
-
-            <!-- Datos de la función -->
             <div class="img-placeholder">
-                <img [src]="pelicula()?.poster_url" [alt]="pelicula()?.titulo" class="poster-img">
-            </div>
-            <div class="funcion-details">
-                <span class="detail-item pelicula-titulo"> {{ pelicula()?.titulo }} </span>
-                <span class="detail-item">{{funcion()?.salas.nombre}}</span>
-                <span class="detail-item">R-{{pelicula().clasificacion}}</span>
-                <span class="detail-item">{{funcion()?.formato}} {{funcion()?.idioma}}</span>
-                <span class="detail-item">{{pelicula()?.duracion_min}} min</span>
-                <span class="detail-item">{{funcion()?.inicio | date:'dd/MM/yyyy HH:mm'}}</span>
-            </div>
-        </div>
-        <!-- Butacas elegidas -->
-        <div class="card butacas-card">
-            <h3>butacas elegidas</h3>
-            <div class="butacas-list">
-                @for (butaca of butacasSeleccionadas(); track butaca) {
-                <span class="butaca-item">{{butaca?.fila}}{{butaca?.numero}}</span>
+                @if (pelicula()?.poster_url) {
+                <img [src]="pelicula()?.poster_url" [alt]="pelicula()?.titulo" class="poster-img" />
                 }
             </div>
+            <div class="funcion-details">
+                <span class="detail-item pelicula-titulo">{{ pelicula()?.titulo }}</span>
+                <span class="detail-item">{{ funcion()?.salas?.nombre }}</span>
+                <span class="detail-item">Clasificación: {{ pelicula()?.clasificacion | uppercase }}</span>
+                <span class="detail-item">{{ funcion()?.formato }} {{ funcion()?.idioma }}</span>
+                <span class="detail-item">{{ pelicula()?.duracion_min }} min</span>
+                <span class="detail-item">{{ funcion()?.inicio | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+        </div>
 
+        <!-- Butacas elegidas -->
+        <div class="card butacas-card">
+            <h3>Butacas elegidas</h3>
+            <div class="butacas-list">
+                @for (butaca of carrito.butacas(); track butaca.id) {
+                <span class="butaca-item">{{ butaca.fila }}{{ butaca.numero }}</span>
+                }
+            </div>
         </div>
     </div>
 
-
     <!-- =====================================================
-         COLUMNA 2: WARNING + CANDY + CUPÓN + EMAIL
+         COLUMNA 2: WARNING + RESUMEN CANDY + CUPÓN + EMAIL
          ===================================================== -->
     <div class="secondary-column">
-
-        <!-- Warning -->
+        @if (pelicula()?.clasificacion && pelicula()?.clasificacion !== 'atp') {
         <div class="card warning-card">
-
-            @if(pelicula()?.clasificacion != 'ATP') {
-            <h3>⚠️ warning +{{pelicula()?.clasificacion}}</h3>
-
+            <h3>⚠️ Clasificación +{{ pelicula()?.clasificacion }}</h3>
             <p>
-                Esta película tiene restricción de edad.
-                Se solicitará DNI en el ingreso.
-                Si el espectador es menor, debe ir acompañado
-                de un adulto responsable.
+                Esta película tiene restricción de edad. Se solicitará DNI en el ingreso.
+                Si el espectador es menor, debe ir acompañado de un adulto responsable.
             </p>
-            }
-
-
         </div>
+        }
 
-
-        <!-- Candy Bar -->
+        <!-- Pedido de Candy Bar -->
         <div class="card candy-section">
-            <h3>agregar candy bar</h3>
-            <div class="candy-grid">
-                @for (prod of productosCandy(); track prod.id){
-                <div class="candy-card">
-                    <div class="candy-img-placeholder"> imagen
-
-                    </div>
-                    <div class="candy-info">
-                        <span class="candy-name"> {{ prod.nombre }} </span>
-                        <span class="candy-price"> ${{ prod.precio }} </span>
-                        <button class="btn btn-secondary btn-agregar" (click)="agregarCandy(prod)"> + Agregar </button>
-                    </div>
-                </div> }
+            <div class="candy-section-header">
+                <h3>🍿 Candy Bar & Combos</h3>
+                <a routerLink="/compra/candy" class="btn btn-sm btn-secondary">
+                    {{ carrito.itemsCandy().length > 0 ? 'Modificar candy' : '+ Agregar candy' }}
+                </a>
             </div>
+
+            @if (carrito.lineasCandyConSubtotal().length === 0) {
+            <p class="text-muted">No agregaste productos ni combos de Candy Bar.</p>
+            } @else {
+            <div class="summary-list">
+                @for (item of carrito.lineasCandyConSubtotal(); track item.tipo + '-' + item.id) {
+                <div class="summary-item">
+                    <span>
+                        {{ item.cantidad }}x {{ item.nombre }}
+                        @if (item.tipo === 'combo') {
+                        <small class="text-muted">(Combo)</small>
+                        }
+                    </span>
+                    <strong>{{ item.subtotalLinea | currency:'ARS':'symbol-narrow':'1.0-0' }}</strong>
+                </div>
+                }
+            </div>
+            }
         </div>
 
-
-        <!-- Cupón -->
+        <!-- Cupón (se conectará en Bloque 5) -->
         <div class="card form-section input-box">
-
-            <h3>ingresar código descuento</h3>
-
+            <h3>Código de descuento</h3>
             <div class="input-group">
-
-                <input type="text" class="input-control" placeholder="CÓDIGO">
-
-                <button class="btn btn-outline">
-                    Aplicar
-                </button>
-
+                <input type="text" class="input-control" placeholder="CÓDIGO" />
+                <button type="button" class="btn btn-outline">Aplicar</button>
             </div>
-
         </div>
-
 
         <!-- Email -->
         <div class="card form-section input-box">
-
-            <h3>Email enviar entradas</h3>
-
+            <h3>Email para enviar comprobante</h3>
             @if (auth.estaAutenticado()) {
-
             <p class="email-autenticado">
-                <span>
-                    {{ auth.perfil()?.email }}
-                </span>
+                <span>{{ auth.perfil()?.email }}</span>
             </p>
-
             } @else {
-
-            <input type="email" class="input-control" [(ngModel)]="emailInvitado" placeholder="tu@email.com">
-
+            <input type="email" class="input-control" [(ngModel)]="emailInvitado" placeholder="tu@email.com" />
             }
-
         </div>
-
     </div>
 
-
     <!-- =====================================================
-         COLUMNA 3: RESUMEN
+         COLUMNA 3: RESUMEN FINAL
          ===================================================== -->
     <aside class="summary-column">
-
         <div class="card summary-card">
-
-            <h3 class="resumen-title">
-                resumen
-            </h3>
+            <h3 class="resumen-title">Resumen de compra</h3>
 
             <div class="resumen-bloque">
-
-                <h4>butacas elegidas</h4>
-
+                <h4>Entradas</h4>
                 <div class="summary-list">
                     @if (resumenButacas().estandar.cantidad > 0) {
                     <div class="summary-item">
                         <span>Entradas Estándar (x{{ resumenButacas().estandar.cantidad }})</span>
-                        <span>${{ resumenButacas().estandar.subtotal }}</span>
+                        <span>{{ resumenButacas().estandar.subtotal | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
                     </div>
                     }
-                    <!-- Mostrar solo si hay entradas VIP -->
                     @if (resumenButacas().vip.cantidad > 0) {
                     <div class="summary-item vip-item">
                         <span>Entradas VIP (x{{ resumenButacas().vip.cantidad }})</span>
-                        <span>${{ resumenButacas().vip.subtotal }}</span>
+                        <span>{{ resumenButacas().vip.subtotal | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
+                    </div>
+                    }
+                    @if (desglose().descuentoEntradasPorCombos > 0) {
+                    <div class="summary-item">
+                        <span>Entradas incluidas en combo</span>
+                        <span>−{{ desglose().descuentoEntradasPorCombos | currency:'ARS':'symbol-narrow':'1.0-0'
+                            }}</span>
                     </div>
                     }
                 </div>
 
-
-                @if (carritoCandy().length > 0) {
-
+                @if (carrito.lineasCandyConSubtotal().length > 0) {
                 <div class="resumen-bloque">
-
-                    <h4>candy bar</h4>
-
+                    <h4>Candy Bar</h4>
                     <div class="summary-list">
-
-                        @for (
-                        item of carritoCandy();
-                        track item.productoId
-                        ) {
-
+                        @for (item of carrito.lineasCandyConSubtotal(); track item.tipo + '-' + item.id) {
                         <div class="summary-item candy">
-
-                            <span>
-                                {{ item.cantidad }}x
-                                {{ item.nombre }}
-                            </span>
-
-                            <span>
-                                ${{ item.cantidad * item.precioUnitario }}
-                            </span>
-
+                            <span>{{ item.cantidad }}x {{ item.nombre }}</span>
+                            <span>{{ item.subtotalLinea | currency:'ARS':'symbol-narrow':'1.0-0' }}</span>
                         </div>
-
                         }
-
                     </div>
-
                 </div>
-
                 }
 
-
-                <hr class="divider">
-
+                <hr class="divider" />
 
                 <div class="total-row">
-
-                    <strong>subtotal</strong>
-
+                    <strong>Total a pagar</strong>
                     <strong class="total-price">
-                        ${{ calcularTotal() }}
+                        {{ desglose().subtotalGeneral | currency:'ARS':'symbol-narrow':'1.0-0' }}
                     </strong>
-
                 </div>
-
 
                 @if (mensajeError()) {
-
-                <div class="alert-error mt-sm">
+                <div class="alert-error mt-sm" role="alert">
                     {{ mensajeError() }}
                 </div>
-
                 }
 
-
-                <button class="btn btn-primary w-100 btn-pagar" [disabled]="procesando()" (click)="pagar()">
-
-                    {{ procesando() ? 'Procesando...' : 'pagar' }}
-
+                <button type="button" class="btn btn-primary w-100 btn-pagar" [disabled]="procesando()"
+                    (click)="pagar()">
+                    {{ procesando() ? 'Procesando pago...' : 'Confirmar y Pagar' }}
                 </button>
-
             </div>
-
         </div>
-
     </aside>
-
+    }
 </div>

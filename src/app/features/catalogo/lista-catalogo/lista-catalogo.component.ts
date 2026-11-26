@@ -1,80 +1,80 @@
 import { Component, effect, inject, OnInit, signal } from '@angular/core';
-import { CatalogoService } from '../catalogo.service';
-import { Genero, Pelicula } from '../../../core/models/database.types';
 import { RouterLink } from '@angular/router';
-import { UpperCasePipe } from '@angular/common';
+import { CatalogoService, PeliculaConGeneros } from '../catalogo.service';
+import { CLASIFICACIONES } from '../../../core/models/constantes';
+import { ClasificacionPelicula, Genero } from '../../../core/models/database.types';
 
 @Component({
-  imports: [RouterLink, UpperCasePipe],
+  imports: [RouterLink],
   selector: 'app-lista-catalogo.component',
   styleUrl: './lista-catalogo.component.css',
   templateUrl: './lista-catalogo.component.html',
 })
 export class ListaCatalogoComponent implements OnInit {
+  private readonly catalogoService = inject(CatalogoService);
 
-  private catalogoService = inject(CatalogoService);
+  readonly generos = signal<Genero[]>([]);
+  readonly peliculas = signal<PeliculaConGeneros[]>([]);
+  readonly cargando = signal<boolean>(true);
+  readonly errorCarga = signal<string | null>(null);
 
-  // Estado reactivo
-  generos = signal<Genero[]>([]);
-  peliculas = signal<Pelicula[]>([]);
-  cargando = signal<boolean>(true);
-
-  // Filtros
-  terminoBusqueda = signal<string>('');
-  seleccionados = signal<string[]>([]);
+  readonly terminoBusqueda = signal<string>('');
+  readonly seleccionados = signal<string[]>([]);
 
   constructor() {
-    // Este effect() se dispara automáticamente cada vez que el usuario escribe o tilda un género
     effect(() => {
       const termino = this.terminoBusqueda();
       const generosIds = this.seleccionados();
-      
-      // Pequeño debounce rudimentario para no saturar Supabase al tipear rápido
+
       const timeoutId = setTimeout(() => {
-        this.ejecutarBusqueda(termino, generosIds);
-      }, 300);
+        void this.ejecutarBusqueda(termino, generosIds);
+      }, 250);
 
       return () => clearTimeout(timeoutId);
     });
   }
 
-  ngOnInit() {
-    this.cargarGeneros();
+  ngOnInit(): void {
+    void this.cargarGeneros();
   }
 
-  async cargarGeneros() {
-    try {
-      const data = await this.catalogoService.getGeneros();
-      this.generos.set(data);
-    } catch (error) {
-      console.error('Error cargando géneros', error);
+  private async cargarGeneros(): Promise<void> {
+    const res = await this.catalogoService.getGeneros();
+    if (res.ok) {
+      this.generos.set(res.data);
     }
   }
 
-  async ejecutarBusqueda(termino: string, generosIds: string[]) {
+  async ejecutarBusqueda(termino: string, generosIds: string[]): Promise<void> {
     this.cargando.set(true);
-    try {
-      const resultados = await this.catalogoService.buscarPeliculas(termino, generosIds);
-      this.peliculas.set(resultados);
-    } catch (error) {
-      console.error('Error en búsqueda', error);
-    } finally {
-      this.cargando.set(false);
-    }
-  }
+    this.errorCarga.set(null);
 
-  toggleGenero(generoId: string) {
-    const actuales = this.seleccionados();
-    if (actuales.includes(generoId)) {
-      this.seleccionados.set(actuales.filter(id => id !== generoId));
+    const res = await this.catalogoService.buscarPeliculas(termino, generosIds);
+    if (res.ok) {
+      this.peliculas.set(res.data);
     } else {
-      this.seleccionados.set([...actuales, generoId]);
+      this.errorCarga.set(res.error);
     }
+    this.cargando.set(false);
   }
 
-  limpiarFiltros() {
+  toggleGenero(generoId: string): void {
+    this.seleccionados.update((actuales) =>
+      actuales.includes(generoId)
+        ? actuales.filter((id) => id !== generoId)
+        : [...actuales, generoId]
+    );
+  }
+
+  limpiarFiltros(): void {
     this.terminoBusqueda.set('');
     this.seleccionados.set([]);
   }
 
+  etiquetaClasificacion(clasificacion: ClasificacionPelicula): string {
+    if (clasificacion === CLASIFICACIONES.ATP) return 'ATP';
+    if (clasificacion === CLASIFICACIONES.MAS_13) return '+13';
+    if (clasificacion === CLASIFICACIONES.MAS_18) return '+18';
+    return String(clasificacion).toUpperCase();
+  }
 }

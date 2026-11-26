@@ -230,7 +230,6 @@ Prioridades:
 ### 5.12 Notificaciones y PWA (NOT)
 
 - **NOT-01 (P0):** Aplicación instalable como PWA, con manifiesto, iconos y service worker.
-- **NOT-02 (P1):** Funcionamiento con conectividad degradada mediante caché de cartelera y entradas adquiridas.
 - **NOT-03 (P2):** Notificaciones push al habilitarse la venta de películas con alertas activadas.
 
 ---

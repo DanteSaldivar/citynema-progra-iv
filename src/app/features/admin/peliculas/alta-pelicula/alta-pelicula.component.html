@@ -1,84 +1,93 @@
 <form class="form-pelicula" [formGroup]="peliculaForm" (ngSubmit)="onSubmit()" novalidate>
   <header class="form-header">
     <div>
-      <h2>Alta de película</h2>
+      <h2>{{ peliculaEditar() ? 'Editar película' : 'Alta de película' }}</h2>
       <p class="subtitle">
-        Completá los datos para incorporar una película al catálogo.
+        Completá los datos de cartelera, clasificación, géneros y preventa.
       </p>
     </div>
   </header>
 
   @if (errorMensaje()) {
-  <div class="alert-error" role="alert">
-    {{ errorMensaje() }}
-  </div>
-  }
-
-  @if (exitoMensaje()) {
-  <div class="alert-success" role="status">
-    {{ exitoMensaje() }}
-  </div>
+    <div class="alert-error" role="alert">
+      {{ errorMensaje() }}
+    </div>
   }
 
   <div class="form-layout">
     <section class="form-fields">
       <div class="form-group">
         <label for="titulo">Título</label>
-        <input id="titulo" type="text" formControlName="titulo" placeholder="Ej. Interstellar" maxlength="150"
+        <input
+          id="titulo"
+          type="text"
+          formControlName="titulo"
+          placeholder="Ej. Interstellar"
+          maxlength="150"
           [class.is-invalid]="peliculaForm.controls.titulo.invalid && peliculaForm.controls.titulo.touched"
-          [disabled]="guardando()" />
+          [disabled]="guardando()"
+        />
 
         @if (peliculaForm.controls.titulo.touched && peliculaForm.controls.titulo.errors) {
-        <small class="field-error">
-          @if (peliculaForm.controls.titulo.hasError('required') || peliculaForm.controls.titulo.hasError('pattern')) {
-          Ingresá un título válido.
-          } @else if (peliculaForm.controls.titulo.hasError('maxlength')) {
-          El título no puede superar los 150 caracteres.
-          }
-        </small>
+          <small class="field-error">
+            @if (peliculaForm.controls.titulo.hasError('required') || peliculaForm.controls.titulo.hasError('pattern')) {
+              Ingresá un título válido.
+            } @else if (peliculaForm.controls.titulo.hasError('maxlength')) {
+              El título no puede superar los 150 caracteres.
+            }
+          </small>
         }
       </div>
 
       <div class="form-group">
         <label for="sinopsis">Sinopsis</label>
-        <textarea id="sinopsis" formControlName="sinopsis" placeholder="Escribí una descripción de la película..."
-          rows="5" maxlength="3000"
+        <textarea
+          id="sinopsis"
+          formControlName="sinopsis"
+          placeholder="Escribí una descripción de la película..."
+          rows="4"
+          maxlength="3000"
           [class.is-invalid]="peliculaForm.controls.sinopsis.invalid && peliculaForm.controls.sinopsis.touched"
-          [disabled]="guardando()"></textarea>
+          [disabled]="guardando()"
+        ></textarea>
 
         @if (peliculaForm.controls.sinopsis.touched && peliculaForm.controls.sinopsis.errors) {
-        <small class="field-error">
-          @if (peliculaForm.controls.sinopsis.hasError('required') ||
-          peliculaForm.controls.sinopsis.hasError('pattern')) {
-          La sinopsis es obligatoria.
-          } @else if (peliculaForm.controls.sinopsis.hasError('maxlength')) {
-          La sinopsis no puede superar los 3000 caracteres.
-          }
-        </small>
+          <small class="field-error">
+            @if (peliculaForm.controls.sinopsis.hasError('required') || peliculaForm.controls.sinopsis.hasError('pattern')) {
+              La sinopsis es obligatoria.
+            } @else if (peliculaForm.controls.sinopsis.hasError('maxlength')) {
+              La sinopsis no puede superar los 3000 caracteres.
+            }
+          </small>
         }
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="duracion_min">Duración (min)</label>
-          <input id="duracion_min" type="number" formControlName="duracion_min" min="1" step="1" placeholder="120"
+          <input
+            id="duracion_min"
+            type="number"
+            formControlName="duracion_min"
+            min="1"
+            max="600"
+            step="1"
             [class.is-invalid]="peliculaForm.controls.duracion_min.invalid && peliculaForm.controls.duracion_min.touched"
-            [disabled]="guardando()" />
+            [disabled]="guardando()"
+          />
 
           @if (peliculaForm.controls.duracion_min.touched && peliculaForm.controls.duracion_min.invalid) {
-          <small class="field-error">
-            Ingresá una duración entera mayor que cero.
-          </small>
+            <small class="field-error">Ingresá una duración entera mayor que cero.</small>
           }
         </div>
 
         <div class="form-group">
-          <label for="fecha_estreno">Fecha de estreno</label>
-          <app-fecha-hora-select [mostrarHora]="false" [fechaMinima]="ahora" (valorCambio)="onFechaCambio($event)" />
-
-          @if (peliculaForm.controls.fecha_estreno.touched && peliculaForm.controls.fecha_estreno.invalid) {
-          <small class="field-error">Seleccioná una fecha de estreno.</small>
-          }
+          <label>Fecha de estreno</label>
+          <app-fecha-hora-select
+            [mostrarHora]="false"
+            [valorInicial]="fechaInicialSelector()"
+            (valorCambio)="onFechaCambio($event)"
+          />
         </div>
       </div>
 
@@ -86,20 +95,104 @@
         <div class="form-group">
           <label for="clasificacion">Clasificación</label>
           <select id="clasificacion" formControlName="clasificacion" [disabled]="guardando()">
-            <option value="ATP">ATP</option>
-            <option value="13">Mayores de 13 años</option>
-            <option value="18">Mayores de 18 años</option>
+            @for (op of clasificacionesOpciones; track op.valor) {
+              <option [value]="op.valor">{{ op.etiqueta }}</option>
+            }
           </select>
         </div>
 
         <div class="form-group">
           <label for="estado">Estado</label>
           <select id="estado" formControlName="estado" [disabled]="guardando()">
-            <option value="proximamente">Próximamente</option>
-            <option value="en_cartelera">En cartelera</option>
-            <option value="finalizado">Finalizado</option>
+            @for (op of estadosOpciones; track op.valor) {
+              <option [value]="op.valor">{{ op.etiqueta }}</option>
+            }
           </select>
         </div>
+      </div>
+
+      <!-- Selector múltiple de géneros (pelicula_generos) -->
+      <div class="form-group">
+        <label>Géneros (selección múltiple)</label>
+        @if (cargandoGeneros()) {
+          <small class="poster-hint">Cargando géneros disponibles...</small>
+        } @else if (generosDisponibles().length === 0) {
+          <small class="field-error">No hay géneros cargados. Creá al menos uno en el ABM de géneros.</small>
+        } @else {
+          <div class="generos-chips" role="group" aria-label="Géneros de la película">
+            @for (g of generosDisponibles(); track g.id) {
+              <button
+                type="button"
+                class="chip-genero"
+                [class.seleccionado]="generosSeleccionados().includes(g.id)"
+                [attr.aria-pressed]="generosSeleccionados().includes(g.id)"
+                [disabled]="guardando()"
+                (click)="toggleGenero(g.id)"
+              >
+                {{ g.nombre }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Destacada en Home -->
+      <div class="config-box">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="destacada" [disabled]="guardando()" />
+          <span>Destacar película en portada</span>
+        </label>
+
+        @if (peliculaForm.controls.destacada.value) {
+          <div class="form-group mt-xs">
+            <label for="orden_destacada">Orden de aparición (1 = primero)</label>
+            <input
+              id="orden_destacada"
+              type="number"
+              formControlName="orden_destacada"
+              min="1"
+              max="99"
+              [disabled]="guardando()"
+            />
+          </div>
+        }
+      </div>
+
+      <!-- Configuración de Preventa -->
+      <div class="config-box">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="preventa_habilitada" [disabled]="guardando()" />
+          <span>Habilitar preventa antes del estreno</span>
+        </label>
+
+        @if (peliculaForm.controls.preventa_habilitada.value) {
+          <div class="form-row mt-xs">
+            <div class="form-group">
+              <label for="preventa_dias">Días previos al estreno</label>
+              <input
+                id="preventa_dias"
+                type="number"
+                formControlName="preventa_dias"
+                min="1"
+                max="90"
+                [disabled]="guardando()"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="preventa_pct">Descuento preventa (%)</label>
+              <input
+                id="preventa_pct"
+                type="number"
+                formControlName="preventa_pct"
+                min="0"
+                max="90"
+                step="1"
+                [disabled]="guardando()"
+              />
+            </div>
+          </div>
+        }
       </div>
     </section>
 
@@ -108,23 +201,31 @@
 
       <label class="poster-upload" for="poster">
         @if (vistaPrevia()) {
-        <img class="poster-preview" [src]="vistaPrevia()" alt="Vista previa del póster" />
-        <span class="poster-change">↻ Cambiar imagen</span>
+          <img class="poster-preview" [src]="vistaPrevia()" alt="Vista previa del póster" />
+          <span class="poster-change">↻ Cambiar imagen</span>
         } @else {
-        <span class="upload-icon">＋</span>
-        <span class="upload-title">Seleccionar póster</span>
-        <span class="upload-hint">JPG, PNG o WebP</span>
-        <span class="upload-hint">Máximo 5 MB</span>
+          <span class="upload-icon">＋</span>
+          <span class="upload-title">Seleccionar póster</span>
+          <span class="upload-hint">JPG, PNG o WebP</span>
+          <span class="upload-hint">Máximo 5 MB</span>
         }
       </label>
 
-      <input id="poster" class="file-input" type="file" accept="image/jpeg,image/png,image/webp"
-        (change)="seleccionarArchivo($event)" [disabled]="guardando()" />
+      <input
+        id="poster"
+        class="file-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        (change)="seleccionarArchivo($event)"
+        [disabled]="guardando()"
+      />
 
       @if (archivoSeleccionado) {
-      <p class="file-name">{{ archivoSeleccionado.name }}</p>
+        <p class="file-name">{{ archivoSeleccionado.name }}</p>
+      } @else if (peliculaEditar()) {
+        <p class="poster-hint">Dejalo así para mantener el póster actual.</p>
       } @else {
-      <p class="poster-hint">La imagen se guardará en el almacenamiento del cine.</p>
+        <p class="poster-hint">La imagen se guardará en el almacenamiento del cine.</p>
       }
     </aside>
   </div>
@@ -135,7 +236,7 @@
     </button>
 
     <button type="submit" class="btn-primary" [disabled]="guardando()">
-      {{ guardando() ? 'Guardando...' : 'Guardar película' }}
+      {{ guardando() ? 'Guardando...' : peliculaEditar() ? 'Guardar cambios' : 'Guardar película' }}
     </button>
   </footer>
 </form>

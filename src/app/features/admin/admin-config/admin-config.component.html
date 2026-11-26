@@ -1,115 +1,102 @@
 <div class="admin-container">
-    <div class="header-section">
-        <h2>Configuración de Negocio</h2>
-        <p class="text-muted">Gestioná cupones de descuento y combos especiales para el Candy Bar.</p>
-    </div>
+  <div class="header-section">
+    <h2>Configuración de Negocio</h2>
+    <p class="text-muted">
+      Gestioná cupones de descuento. Los combos y productos del Candy Bar ahora se administran desde
+      <a routerLink="/admin/productos">Candy Bar y Combos</a>.
+    </p>
+  </div>
 
-    <div class="config-grid">
+  <div class="config-grid">
+    <!-- SECCIÓN CUPONES -->
+    <div class="card config-section">
+      <h3>🎟️ Cupones de Descuento</h3>
 
-        <!-- SECCIÓN CUPONES -->
-        <div class="card config-section">
-            <h3>🎟️ Cupones de Descuento</h3>
-
-            <form class="config-form" (ngSubmit)="crearCupon()" #fCupon="ngForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Código</label>
-                        <input type="text" class="input-control" [(ngModel)]="nuevoCupon.codigo" name="codigo"
-                            placeholder="EJ: PRIMERA20" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Descuento (%)</label>
-                        <input type="number" class="input-control" [(ngModel)]="nuevoCupon.porcentaje"
-                            name="descuento" required min="1" max="100">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Restricción</label>
-                        <select class="input-control" [(ngModel)]="nuevoCupon.tipo" name="tipo_restriccion"
-                            required>
-                            <option value="ninguna">Sin restricción</option>
-                            <option value="primera_compra">Primera Compra</option>
-                            <option value="edad_minima">Edad Mínima</option>
-                        </select>
-                    </div>
-                    @if (nuevoCupon.tipo === 'edad_minima') {
-                    <div class="form-group">
-                        <label>Edad Mínima requerida</label>
-                        <input type="number" class="input-control" [(ngModel)]="nuevoCupon.edad_minima"
-                            name="valor_restriccion" placeholder="Ej: 50" required>
-                    </div>
-                    }
-                </div>
-
-                <button type="submit" class="btn btn-primary mt-sm" [disabled]="fCupon.invalid || procesando()">Guardar
-                    Cupón</button>
-            </form>
-
-            <hr class="divider">
-
-            <ul class="item-list">
-                @for (cupon of cupones(); track cupon.id) {
-                <li class="item-row" [class.inactivo]="!cupon.activo">
-                    <div class="item-info">
-                        <strong>{{ cupon.codigo }}</strong> ({{ cupon.porcentaje }}% OFF)
-                        <small class="text-muted d-block">
-                            Regla: {{ cupon.tipo | uppercase }}
-                            {{ cupon.edad_minima ? ' > ' + cupon.edad_minima + ' años' : '' }}
-                        </small>
-                    </div>
-                    <button class="btn btn-sm" [class.btn-outline-danger]="cupon.activo"
-                        [class.btn-outline-success]="!cupon.activo" (click)="toggleCupon(cupon)">
-                        {{ cupon.activo ? 'Desactivar' : 'Activar' }}
-                    </button>
-                </li>
-                }
-            </ul>
+      <form class="config-form" (ngSubmit)="crearCupon()" #fCupon="ngForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código</label>
+            <input
+              type="text"
+              class="input-control"
+              [(ngModel)]="nuevoCupon.codigo"
+              name="codigo"
+              placeholder="EJ: PRIMERA20"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Descuento (%)</label>
+            <input
+              type="number"
+              class="input-control"
+              [(ngModel)]="nuevoCupon.porcentaje"
+              name="descuento"
+              required
+              min="1"
+              max="100"
+            />
+          </div>
         </div>
 
-        <!-- SECCIÓN COMBOS -->
-        <div class="card config-section">
-            <h3>🍿 Combos Destacados</h3>
-
-            <form class="config-form" (ngSubmit)="crearCombo()" #fCombo="ngForm">
-                <div class="form-group">
-                    <label>Nombre del Combo</label>
-                    <input type="text" class="input-control" [(ngModel)]="nuevoCombo.nombre" name="nombre_combo"
-                        placeholder="Ej: Mega Combo Familiar" required>
-                </div>
-                <div class="form-group mt-sm">
-                    <label>Descripción (Qué incluye)</label>
-                    <input type="text" class="input-control" [(ngModel)]="nuevoCombo.descripcion" name="desc_combo"
-                        placeholder="Ej: 2 Entradas + 1 Pochoclo Gde + 2 Bebidas" required>
-                </div>
-                <div class="form-group mt-sm">
-                    <label>Precio Fijo ($)</label>
-                    <input type="number" class="input-control" [(ngModel)]="nuevoCombo.precio" name="precio_combo"
-                        required min="100">
-                </div>
-
-                <button type="submit" class="btn btn-primary mt-sm" [disabled]="fCombo.invalid || procesando()">Guardar
-                    Combo</button>
-            </form>
-
-            <hr class="divider">
-
-            <ul class="item-list">
-                @for (combo of combos(); track combo.id) {
-                <li class="item-row" [class.inactivo]="!combo.activo">
-                    <div class="item-info">
-                        <strong>{{ combo.nombre }}</strong> - \${{ combo.precio }}
-                        <small class="text-muted d-block">{{ combo.descripcion }}</small>
-                    </div>
-                    <button class="btn btn-sm" [class.btn-outline-danger]="combo.activo"
-                        [class.btn-outline-success]="!combo.activo" (click)="toggleCombo(combo)">
-                        {{ combo.activo ? 'Desactivar' : 'Activar' }}
-                    </button>
-                </li>
-                }
-            </ul>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Restricción</label>
+            <select
+              class="input-control"
+              [(ngModel)]="nuevoCupon.tipo"
+              name="tipo_restriccion"
+              required
+            >
+              <option value="general">General (sin restricción)</option>
+              <option value="primera_compra">Primera Compra</option>
+              <option value="edad_minima">Edad Mínima</option>
+            </select>
+          </div>
+          @if (nuevoCupon.tipo === 'edad_minima') {
+            <div class="form-group">
+              <label>Edad Mínima requerida</label>
+              <input
+                type="number"
+                class="input-control"
+                [(ngModel)]="nuevoCupon.edad_minima"
+                name="valor_restriccion"
+                placeholder="Ej: 50"
+                required
+              />
+            </div>
+          }
         </div>
 
+        <button type="submit" class="btn btn-primary mt-sm" [disabled]="fCupon.invalid || procesando()">
+          Guardar Cupón
+        </button>
+      </form>
+
+      <hr class="divider" />
+
+      <ul class="item-list">
+        @for (cupon of cupones(); track cupon.id) {
+          <li class="item-row" [class.inactivo]="!cupon.activo">
+            <div class="item-info">
+              <strong>{{ cupon.codigo }}</strong> ({{ cupon.porcentaje }}% OFF)
+              <small class="text-muted d-block">
+                Regla: {{ cupon.tipo | uppercase }}
+                {{ cupon.edad_minima ? ' > ' + cupon.edad_minima + ' años' : '' }}
+              </small>
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-outline-danger]="cupon.activo"
+              [class.btn-outline-success]="!cupon.activo"
+              (click)="toggleCupon(cupon)"
+            >
+              {{ cupon.activo ? 'Desactivar' : 'Activar' }}
+            </button>
+          </li>
+        }
+      </ul>
     </div>
+  </div>
 </div>
